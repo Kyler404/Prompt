@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prompt Studio | 生图与文笔提示词工作台</title>
+    <meta
+      name="description"
+      content="专注生图与文笔两类创作提示词，可查看例图、编辑关键词并一键复制。"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="site-header">
+        <nav class="topbar" aria-label="主导航">
+          <a class="brand" href="#" aria-label="Prompt Studio 首页">
+            <span class="brand-mark">P</span>
+            <span>
+              <strong>Prompt Studio</strong>
+              <small>生图 / 文笔工作台</small>
+            </span>
+          </a>
+
+          <div class="top-actions">
+            <a class="admin-link" href="./admin.html">后台管理</a>
+            <label class="search-box">
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <input id="searchInput" type="search" placeholder="搜索模板、场景或关键词" />
+            </label>
+            <button class="icon-button" id="themeToggle" type="button" aria-label="切换深浅色主题">
+              <span class="theme-icon" aria-hidden="true">☾</span>
+            </button>
+          </div>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">Prompt atelier</p>
+            <h1>把灵感收束成可复制的创作指令。</h1>
+            <p>
+              只保留「生图」与「文笔」两条主线。左侧选方向，中间挑模板，右侧改关键词、看例图、复制成稿。
+            </p>
+          </div>
+          <div class="hero-panel" aria-label="创作概览">
+            <div class="hero-panel-feature">
+              <span>当前方向</span>
+              <strong id="heroCategory">生图</strong>
+            </div>
+            <div>
+              <strong id="templateCount">0</strong>
+              <span>可用模板</span>
+            </div>
+            <div>
+              <strong id="categoryCount">0</strong>
+              <span>核心分类</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="workspace" aria-label="提示词模板工作区">
+          <aside class="sidebar">
+            <div class="section-title">
+              <span>创作分类</span>
+              <button class="text-button" id="clearFilters" type="button">重置</button>
+            </div>
+            <div class="category-list" id="categoryList"></div>
+          </aside>
+
+          <section class="template-area">
+            <div class="toolbar">
+              <div>
+                <p class="eyebrow">Studio library</p>
+                <h2>灵感模板</h2>
+              </div>
+              <div class="sort-wrap">
+                <label for="sortSelect">排序</label>
+                <select id="sortSelect">
+                  <option value="popular">推荐优先</option>
+                  <option value="name">名称 A-Z</option>
+                  <option value="recent">最近新增</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="template-grid" id="templateGrid"></div>
+            <div class="empty-state" id="emptyState" hidden>
+              <strong>没有找到匹配模板</strong>
+              <span>换个关键词，或者回到生图分类再试试。</span>
+            </div>
+          </section>
+
+          <aside class="editor-panel" aria-label="提示词编辑器" hidden>
+            <div class="editor-header">
+              <div>
+                <p class="eyebrow">Prompt composer</p>
+                <h2 id="editorTitle">选择一个模板</h2>
+              </div>
+              <button class="icon-button" id="favoriteButton" type="button" aria-label="收藏当前模板">
+                <span aria-hidden="true">♡</span>
+              </button>
+            </div>
+
+            <p class="editor-desc" id="editorDescription">
+              从模板库选择一个提示词，这里会显示可修改的关键词、例图和实时预览。
+            </p>
+
+            <section class="example-gallery" id="exampleGallery" aria-label="模板例图展示">
+              <div class="preview-topline">
+                <span>例图展示</span>
+              </div>
+              <div class="example-gallery-grid" id="exampleGalleryGrid"></div>
+            </section>
+
+            <form class="variables-form" id="variablesForm" aria-label="关键词编辑表单"></form>
+
+            <div class="preview-card">
+              <div class="preview-topline">
+                <span>复制预览</span>
+                <button class="text-button" id="resetVariables" type="button">恢复默认</button>
+              </div>
+              <pre id="promptPreview">等待选择模板...</pre>
+            </div>
+
+            <div class="editor-actions">
+              <button class="primary-button" id="copyButton" type="button" disabled>
+                <span aria-hidden="true">⧉</span>
+                复制提示词
+              </button>
+              <button class="secondary-button" id="randomButton" type="button">
+                <span aria-hidden="true">↻</span>
+                随机灵感
+              </button>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <div class="image-lightbox" id="imageLightbox" hidden>
+      <button class="lightbox-backdrop" id="lightboxBackdrop" type="button" aria-label="点击背景关闭例图预览"></button>
+      <div class="lightbox-panel" role="dialog" aria-modal="true" aria-label="例图预览">
+        <button class="icon-button lightbox-close" id="lightboxClose" type="button" aria-label="关闭例图预览">×</button>
+        <img id="lightboxImage" alt="例图预览" />
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
