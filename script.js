@@ -1,5 +1,46 @@
 const defaultTemplates = [
   {
+    "id": "template-mq3l8bmm-4578a",
+    "title": "半条命画风",
+    "category": "生图",
+    "description": "",
+    "popularity": 78,
+    "date": "2026-06-07",
+    "variables": {},
+    "examples": [
+      {
+        "src": "./assets/examples/5/1.png",
+        "title": "",
+        "description": ""
+      },
+      {
+        "src": "./assets/examples/5/2.png",
+        "title": "",
+        "description": ""
+      }
+    ],
+    "prompt": "严格基于参考图进行风格转换，100%锁定原图构图、人物与场景，禁止任何重绘与元素篡改。Garry's Mod (GMOD) Source引擎渲染，半条命2模组场景，2000年代千禧年早期3D游戏画质。低多边形块状建模，低分辨率粗糙贴图，老旧游戏颗粒感，复古忧郁氛围。模拟早期引擎生硬光影，阴天漫射无硬阴影，整体昏暗冷灰低饱和色调，阴沉多云天空。中近景人物取景，保持原图视角不变。"
+  },
+  {
+    "id": "template-mq38rwaq-kc924",
+    "title": "人物拖影",
+    "category": "生图",
+    "description": "电影级视觉设计的生成。",
+    "popularity": 80,
+    "date": "2026-06-07",
+    "variables": {
+      "图片左下角文字": "lam the protagonist of my life script"
+    },
+    "examples": [
+      {
+        "src": "./assets/examples/4.png",
+        "title": "",
+        "description": ""
+      }
+    ],
+    "prompt": "参照我的图，帮我把这张照片处理出动感横向拖影效果，拖影范围不要太大，拖影颜色和人物本身颜色严格统一。\n采用伦勃朗光影布光，仅一束强光打亮半张脸，面部其余区域处于深邃阴影中；整体暗调风格，光影对比强烈。\n人物处于右侧，身后左侧添加横向动态模糊拖影，营造速度感和压迫感，整体风格硬朗帅气，营造疾速行进的速度感。\n纯黑色背景，色调保持低对比，高质感的电影感。8K分辨率，细节丰富。\n左下角排版白色简约字体文字：{{图片左下角文字}}。\n画幅比例3:2，写实原生摄影风格。"
+  },
+  {
     "id": "template-mpzbh0et-7r2jz",
     "title": "物品描边",
     "category": "生图",
@@ -41,9 +82,9 @@ const defaultTemplates = [
     "popularity": 93,
     "date": "2026-05-29",
     "variables": {
-      "姓名": "Ziyan Cai",
-      "学历": "Undergraduate Student of Engineering",
-      "专业": "Engineering Cost"
+      "姓名": "Elon Musk",
+      "学历": "University of Pennsylvania",
+      "专业": "Engineer"
     },
     "examples": [
       {
