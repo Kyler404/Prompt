@@ -1,0 +1,17 @@
+# Prompt Studio — Cloudflare Pages + Functions + D1
+#
+# 部署命令必须是（Pages 模式，才会认 functions/ 目录 + 应用下面的 D1 绑定）：
+#   npx wrangler pages deploy .
+#
+# 注意：不要用 `wrangler deploy`（Workers 模式），它会忽略 functions/ 目录，
+# 导致 /api/templates 不存在；且每次部署会用本文件覆盖 Dashboard 手动加的绑定。
+
+name = "prompt"
+compatibility_date = "2026-08-28"
+pages_build_output_dir = "."
+
+# D1 绑定：Functions 里通过 env.DB 访问
+[[d1_databases]]
+binding = "DB"
+database_name = "prompt-templates"
+database_id = "bd7becbd-726e-484f-a66f-6d65eb64eac3"
