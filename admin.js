@@ -214,7 +214,7 @@ function createExampleRow(example = {}) {
   const row = document.createElement("div");
   row.className = "example-row";
   row.innerHTML = `
-    <input class="example-src" placeholder="./assets/examples/example.jpg" value="${escapeAttribute(example.src || "")}" />
+    <input class="example-src" placeholder="图片地址，或点上方「上传图片」" value="${escapeAttribute(example.src || "")}" />
     <button class="icon-button example-remove" type="button" aria-label="删除例图">×</button>
   `;
   row.querySelector(".example-remove").addEventListener("click", () => {
@@ -367,7 +367,7 @@ function addVariable() {
 }
 
 function addExample() {
-  exampleRows.appendChild(createExampleRow({ src: "./assets/examples/" }));
+  exampleRows.appendChild(createExampleRow({ src: "" }));
   syncFormToState();
   markDirty(adminState.selectedId);
 }
