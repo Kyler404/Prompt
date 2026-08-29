@@ -34,9 +34,10 @@
 
   --radius: 12px;
 
-  --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui,
-    sans-serif;
-  --font-serif: "Noto Serif SC", "Songti SC", "SimSun", serif;
+  /* 系统字体优先：苹方 / 鸿蒙 / 微软雅黑，不依赖外部字体 CDN（国内访问会阻塞渲染） */
+  --font-sans: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei",
+    "Noto Sans SC", system-ui, sans-serif;
+  --font-serif: "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif;
 
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
