@@ -4,7 +4,7 @@ const defaultTemplates = [
     "title": "半条命画风",
     "category": "生图",
     "description": "",
-    "popularity": 4,
+    "popularity": 78,
     "date": "2026-06-07",
     "variables": {},
     "examples": [
@@ -26,7 +26,7 @@ const defaultTemplates = [
     "title": "人物拖影",
     "category": "生图",
     "description": "电影级视觉设计的生成。",
-    "popularity": 4,
+    "popularity": 80,
     "date": "2026-06-07",
     "variables": {
       "图片左下角文字": "lam the protagonist of my life script"
@@ -45,7 +45,7 @@ const defaultTemplates = [
     "title": "物品描边",
     "category": "生图",
     "description": "把日常拍摄的照片变得有趣。",
-    "popularity": 4,
+    "popularity": 80,
     "date": "2026-06-04",
     "variables": {},
     "examples": [
@@ -62,7 +62,7 @@ const defaultTemplates = [
     "title": "发型分析信息图",
     "category": "生图",
     "description": "使用一张或多张自拍照片制作一份发型分析图表。",
-    "popularity": 4,
+    "popularity": 96,
     "date": "2026-06-01",
     "variables": {},
     "examples": [
@@ -79,7 +79,7 @@ const defaultTemplates = [
     "title": "企业高管证件照片",
     "category": "生图",
     "description": "生成一张商务高管的证件照/形象照。",
-    "popularity": 4,
+    "popularity": 93,
     "date": "2026-05-29",
     "variables": {
       "姓名": "Elon Musk",
@@ -100,7 +100,7 @@ const defaultTemplates = [
     "title": "品牌发布文案",
     "category": "文笔",
     "description": "把产品或服务写成有画面、有节奏、适合发布的品牌文案。",
-    "popularity": 4,
+    "popularity": 94,
     "date": "2026-05-25",
     "variables": {
       "品牌": "一家独立香氛工作室",
@@ -116,7 +116,7 @@ const defaultTemplates = [
     "title": "段落润色成稿",
     "category": "文笔",
     "description": "把粗糙草稿改成更自然、更有节奏的中文表达。",
-    "popularity": 4,
+    "popularity": 91,
     "date": "2026-05-21",
     "variables": {
       "草稿": "在这里粘贴需要润色的文字",
@@ -127,23 +127,6 @@ const defaultTemplates = [
     "prompt": "请润色以下草稿，风格为「{{风格}}」，需要保留「{{保留}}」。输出润色后的正文，并简短说明三处关键修改。\n\n草稿：\n{{草稿}}"
   }
 ];
-
-// 热度：8 星制（1-8），缺省 4 星
-const MAX_STARS = 8;
-const DEFAULT_STARS = 4;
-
-function clampStars(value) {
-  const n = Number.parseInt(value, 10);
-  if (!Number.isFinite(n)) return DEFAULT_STARS;
-  return Math.min(MAX_STARS, Math.max(1, n));
-}
-
-function starsMarkup(value) {
-  const count = clampStars(value);
-  const on = "★".repeat(count);
-  const off = "☆".repeat(MAX_STARS - count);
-  return `<span class="stars" aria-label="热度 ${count} 星（满分 ${MAX_STARS} 星）"><span class="star is-on">${on}</span><span class="star">${off}</span></span>`;
-}
 
 // 模板数据源：先用内置兜底，前台 fetch 到云端数据后再覆盖（见文件末尾的加载逻辑）
 let templates = defaultTemplates;
@@ -253,10 +236,7 @@ if (document.body.dataset.page !== "admin") {
     return filtered.sort((a, b) => {
       if (state.sort === "name") return a.title.localeCompare(b.title, "zh-CN");
       if (state.sort === "recent") return new Date(b.date) - new Date(a.date);
-      // 推荐优先：星级高的在前，星级相同则按添加时间新的在前
-      const diff = clampStars(b.popularity) - clampStars(a.popularity);
-      if (diff !== 0) return diff;
-      return new Date(b.date) - new Date(a.date);
+      return b.popularity - a.popularity;
     });
   }
 
@@ -278,7 +258,6 @@ if (document.body.dataset.page !== "admin") {
         <h3>${escapeHtml(template.title)}</h3>
         <p>${escapeHtml(template.description)}</p>
         <div class="card-meta">
-          ${starsMarkup(template.popularity)}
           <span>${Object.keys(template.variables || {}).length} 个关键词</span>
           <span>${(template.examples || []).length} 张例图</span>
         </div>

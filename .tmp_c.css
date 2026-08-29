@@ -467,12 +467,6 @@ button {
   gap: 10px;
 }
 
-/* 卡片里塞了星级后可能放不下，允许换行 */
-.card-meta {
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
 .tag {
   display: inline-flex;
   align-items: center;
@@ -1020,56 +1014,11 @@ pre {
   background: var(--danger);
 }
 
-/* 热度星级：8 星制，后台可点选，前台只读展示 */
-.star-picker {
-  display: flex;
-  align-items: center;
-  gap: 1px;
-  min-height: 42px;
-  padding: 0 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-soft);
-}
-
-.star-picker .star {
-  padding: 6px 3px;
-  font-size: 17px;
-  line-height: 1;
-  color: var(--muted);
-  background: none;
-  border: 0;
-  border-radius: 4px;
-  transition:
-    transform 140ms ease,
-    color 140ms ease;
-}
-
-.star-picker .star:hover {
-  transform: scale(1.2);
-  color: var(--accent);
-}
-
-.star-picker .star.is-on {
-  color: var(--accent);
-}
-
-.stars {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  white-space: nowrap;
-}
-
-.stars .star {
+.examples-hint {
+  margin: 0;
   font-size: 12px;
-  line-height: 1;
-  letter-spacing: 0.5px;
+  line-height: 1.6;
   color: var(--muted);
-}
-
-.stars .star.is-on {
-  color: var(--accent);
 }
 
 .variable-row {

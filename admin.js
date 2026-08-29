@@ -16,6 +16,46 @@ const adminState = {
 // 只有落在我们自己的图片域名下的 URL 才允许被删除，避免误删外链图
 const IMAGE_BASE = "https://img.guoke404.xin/";
 
+// 简短说明的提示文案：只作 placeholder，不作为真实内容存进数据
+const DESCRIPTION_PLACEHOLDER = "在这里填写这个模板适合什么场景。";
+
+function normalizeDescription(value) {
+  const text = String(value || "").trim();
+  return text === DESCRIPTION_PLACEHOLDER ? "" : text;
+}
+
+// 热度：8 星制（1-8），缺省 4 星
+const STAR_MAX = 8;
+const STAR_DEFAULT = 4;
+
+function clampStarValue(value) {
+  const n = Number.parseInt(value, 10);
+  if (!Number.isFinite(n)) return STAR_DEFAULT;
+  return Math.min(STAR_MAX, Math.max(1, n));
+}
+
+function renderStarPicker(value) {
+  if (!popularityStars) return;
+  const current = clampStarValue(value);
+  popularityStars.innerHTML = "";
+  for (let index = 1; index <= STAR_MAX; index += 1) {
+    const star = document.createElement("button");
+    star.type = "button";
+    star.className = index <= current ? "star is-on" : "star";
+    star.textContent = index <= current ? "★" : "☆";
+    star.dataset.value = String(index);
+    star.setAttribute("aria-label", `${index} 星`);
+    star.setAttribute("aria-pressed", index <= current ? "true" : "false");
+    star.addEventListener("click", () => {
+      popularityInput.value = String(index);
+      renderStarPicker(index);
+      syncFormToState();
+      markDirty(adminState.selectedId);
+    });
+    popularityStars.appendChild(star);
+  }
+}
+
 function collectExampleSources() {
   const set = new Set();
   adminState.templates.forEach((template) => {
@@ -59,6 +99,7 @@ const adminForm = document.querySelector("#adminForm");
 const titleInput = document.querySelector("#titleInput");
 const categoryInput = document.querySelector("#categoryInput");
 const popularityInput = document.querySelector("#popularityInput");
+const popularityStars = document.querySelector("#popularityStars");
 const dateInput = document.querySelector("#dateInput");
 const descriptionInput = document.querySelector("#descriptionInput");
 const promptInput = document.querySelector("#promptInput");
@@ -173,6 +214,15 @@ function renderTemplateList() {
     acc.groups[category].push(template);
     return acc;
   }, { order: [], groups: {} });
+
+  // 分组内排序：星级高的在前，星级相同按添加时间新的在前（与前台「推荐优先」保持一致）
+  Object.values(grouped.groups).forEach((list) => {
+    list.sort((a, b) => {
+      const diff = clampStarValue(b.popularity) - clampStarValue(a.popularity);
+      if (diff !== 0) return diff;
+      return new Date(b.date) - new Date(a.date);
+    });
+  });
 
   // 初次加载时不默认展开任何分类
 
@@ -299,9 +349,10 @@ function renderEditor() {
 
   titleInput.value = template.title || "";
   categoryInput.value = template.category || "";
-  popularityInput.value = template.popularity ?? 80;
+  popularityInput.value = String(clampStarValue(template.popularity));
+  renderStarPicker(clampStarValue(template.popularity));
   dateInput.value = template.date || today();
-  descriptionInput.value = template.description || "";
+  descriptionInput.value = normalizeDescription(template.description);
   promptInput.value = template.prompt || "";
 
   exampleRows.innerHTML = "";
@@ -321,9 +372,9 @@ function syncFormToState() {
 
   template.title = titleInput.value.trim();
   template.category = categoryInput.value.trim();
-  template.popularity = Number(popularityInput.value || 0);
+  template.popularity = clampStarValue(popularityInput.value);
   template.date = dateInput.value || today();
-  template.description = descriptionInput.value.trim();
+  template.description = normalizeDescription(descriptionInput.value);
   template.prompt = promptInput.value.trim();
   template.examples = [];
   template.variables = {};
@@ -352,8 +403,8 @@ function createTemplate() {
     id: uid(),
     title: "新的提示词模板",
     category,
-    description: "在这里填写这个模板适合什么场景。",
-    popularity: 80,
+    description: "",
+    popularity: STAR_DEFAULT,
     date: today(),
     variables: {
       主题: "你的主题",
