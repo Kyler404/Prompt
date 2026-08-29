@@ -729,6 +729,18 @@ pre {
   transform: translateY(0);
 }
 
+/* 脚本崩溃兜底提示条：新 HTML 配上被缓存的旧 JS 时，至少告诉用户该硬刷新 */
+.boot-error {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 12px 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #fff;
+  background: var(--danger);
+}
+
 .lightbox-open {
   overflow: hidden;
 }

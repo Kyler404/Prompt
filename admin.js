@@ -377,7 +377,7 @@ function uploadExample() {
   uploadInput.click();
 }
 
-uploadInput.addEventListener("change", async () => {
+uploadInput?.addEventListener("change", async () => {
   const files = Array.from(uploadInput.files || []);
   uploadInput.value = "";
   if (!files.length) return;
@@ -482,25 +482,25 @@ async function restoreDefaults() {
   render();
 }
 
-adminForm.addEventListener("input", () => {
+adminForm?.addEventListener("input", () => {
   syncFormToState();
   markDirty(adminState.selectedId);
   renderTemplateList();
   adminEditorTitle.textContent = getSelectedTemplate()?.title || "模板详情";
 });
 
-adminSearch.addEventListener("input", (event) => {
+adminSearch?.addEventListener("input", (event) => {
   adminState.query = event.target.value;
   renderTemplateList();
 });
 
-newTemplateButton.addEventListener("click", createTemplate);
-duplicateButton.addEventListener("click", duplicateTemplate);
-deleteButton.addEventListener("click", deleteTemplate);
-uploadExampleButton.addEventListener("click", uploadExample);
-addVariableButton.addEventListener("click", addVariable);
-saveAllButton.addEventListener("click", saveAll);
-restoreDefaultsButton.addEventListener("click", restoreDefaults);
+newTemplateButton?.addEventListener("click", createTemplate);
+duplicateButton?.addEventListener("click", duplicateTemplate);
+deleteButton?.addEventListener("click", deleteTemplate);
+uploadExampleButton?.addEventListener("click", uploadExample);
+addVariableButton?.addEventListener("click", addVariable);
+saveAllButton?.addEventListener("click", saveAll);
+restoreDefaultsButton?.addEventListener("click", restoreDefaults);
 
 window.addEventListener("beforeunload", (event) => {
   if (!adminState.dirty) return;

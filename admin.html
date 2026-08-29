@@ -5,10 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>后台管理 | Prompt Studio</title>
     <meta name="description" content="管理 Prompt Studio 的生图与文笔提示词模板。" />
-    <link rel="stylesheet" href="./styles.css" />
-    <link rel="stylesheet" href="./admin-dark.css" />
+    <!-- 静态资源带版本号：Cloudflare Pages 给 JS/CSS 的缓存是 max-age=14400（4 小时），
+         而 HTML 是 max-age=0 永远最新。改完 JS 若不 ?v= 加一，浏览器会拿「新 HTML + 旧 JS」，
+         旧脚本找不到已删除的元素就会整页崩溃（表现为后台空白）。改 JS/CSS 记得同步 +1。 -->
+    <link rel="stylesheet" href="./styles.css?v=1.0.8" />
+    <link rel="stylesheet" href="./admin-dark.css?v=1.0.8" />
+    <script>
+      // 早期错误兜底：脚本崩溃时给出可操作的提示，而不是白屏
+      window.addEventListener("error", function (event) {
+        var box = document.getElementById("bootError");
+        if (!box) return;
+        box.hidden = false;
+        box.textContent =
+          "页面脚本加载异常，可能是浏览器缓存了旧版本。请按 Ctrl+Shift+R（Mac 为 Cmd+Shift+R）强制刷新。" +
+          (event && event.message ? "（" + event.message + "）" : "");
+      });
+    </script>
   </head>
   <body data-page="admin">
+    <div class="boot-error" id="bootError" role="alert" hidden></div>
     <div class="app-shell">
       <header class="site-header">
         <nav class="topbar" aria-label="后台导航">
@@ -134,7 +149,7 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="./script.js"></script>
-    <script src="./admin.js"></script>
+    <script src="./script.js?v=1.0.8"></script>
+    <script src="./admin.js?v=1.0.8"></script>
   </body>
 </html>

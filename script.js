@@ -204,7 +204,7 @@ if (document.body.dataset.page !== "admin") {
       button.type = "button";
       button.dataset.category = category;
       button.innerHTML = `<span>${category}</span><span class="count">${count}</span>`;
-      button.addEventListener("click", () => {
+      button?.addEventListener("click", () => {
         state.selectedCategory = category;
         const first = getVisibleTemplates()[0];
         state.selectedTemplateId = first?.id || "";
@@ -262,7 +262,7 @@ if (document.body.dataset.page !== "admin") {
           <span>${(template.examples || []).length} 张例图</span>
         </div>
       `;
-      button.addEventListener("click", () => {
+      button?.addEventListener("click", () => {
         state.selectedTemplateId = template.id;
         render();
         if (window.matchMedia("(max-width: 1180px)").matches) {
@@ -315,7 +315,7 @@ if (document.body.dataset.page !== "admin") {
       `;
 
       const control = field.querySelector("[data-key]");
-      control.addEventListener("input", (event) => {
+      control?.addEventListener("input", (event) => {
         values[event.target.dataset.key] = event.target.value;
         updatePreview();
       });
@@ -367,7 +367,7 @@ if (document.body.dataset.page !== "admin") {
       .join("");
 
     exampleGalleryGrid.querySelectorAll(".example-card").forEach((button) => {
-      button.addEventListener("click", () => openLightbox(button.dataset.exampleSrc));
+      button?.addEventListener("click", () => openLightbox(button.dataset.exampleSrc));
     });
   }
 
@@ -473,22 +473,22 @@ if (document.body.dataset.page !== "admin") {
     showToast(`已切换到「${next.title}」。`);
   }
 
-  searchInput.addEventListener("input", (event) => {
+  searchInput?.addEventListener("input", (event) => {
     state.query = event.target.value;
     renderTemplates();
   });
 
-  sortSelect.addEventListener("change", (event) => {
+  sortSelect?.addEventListener("change", (event) => {
     state.sort = event.target.value;
     renderTemplates();
   });
 
-  copyButton.addEventListener("click", copyPrompt);
-  randomButton.addEventListener("click", selectRandomTemplate);
-  resetVariables.addEventListener("click", resetCurrentVariables);
-  favoriteButton.addEventListener("click", toggleFavorite);
-  lightboxBackdrop.addEventListener("click", closeLightbox);
-  lightboxClose.addEventListener("click", closeLightbox);
+  copyButton?.addEventListener("click", copyPrompt);
+  randomButton?.addEventListener("click", selectRandomTemplate);
+  resetVariables?.addEventListener("click", resetCurrentVariables);
+  favoriteButton?.addEventListener("click", toggleFavorite);
+  lightboxBackdrop?.addEventListener("click", closeLightbox);
+  lightboxClose?.addEventListener("click", closeLightbox);
 
   window.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !imageLightbox.hidden) {
@@ -496,7 +496,7 @@ if (document.body.dataset.page !== "admin") {
     }
   });
 
-  clearFilters.addEventListener("click", () => {
+  clearFilters?.addEventListener("click", () => {
     state.selectedCategory = "生图";
     state.query = "";
     state.sort = "popular";
