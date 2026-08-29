@@ -15,3 +15,8 @@ pages_build_output_dir = "."
 binding = "DB"
 database_name = "prompt-templates"
 database_id = "dd2da6f8-d50c-4892-bd0d-bbdbc4f9252c"
+
+# R2 绑定：Functions 里通过 env.BUCKET 访问（例图存储）
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "prompt-examples"

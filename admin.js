@@ -27,6 +27,7 @@ const newTemplateButton = document.querySelector("#newTemplateButton");
 const duplicateButton = document.querySelector("#duplicateButton");
 const deleteButton = document.querySelector("#deleteButton");
 const addExampleButton = document.querySelector("#addExampleButton");
+const uploadExampleButton = document.querySelector("#uploadExampleButton");
 const addVariableButton = document.querySelector("#addVariableButton");
 const saveAllButton = document.querySelector("#saveAllButton");
 const restoreDefaultsButton = document.querySelector("#restoreDefaultsButton");
@@ -371,6 +372,46 @@ function addExample() {
   markDirty(adminState.selectedId);
 }
 
+// —— 上传图片到 R2 ——
+const uploadInput = document.createElement("input");
+uploadInput.type = "file";
+uploadInput.accept = "image/*";
+uploadInput.hidden = true;
+document.body.appendChild(uploadInput);
+
+function uploadExample() {
+  uploadInput.click();
+}
+
+uploadInput.addEventListener("change", async () => {
+  const [file] = uploadInput.files;
+  if (!file) return;
+  uploadInput.value = "";
+
+  showToast("上传中…");
+  try {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+    if (!res.ok) {
+      let message = `HTTP ${res.status}`;
+      try {
+        const err = await res.json();
+        if (err && err.error) message = err.error;
+      } catch {
+      }
+      throw new Error(message);
+    }
+    const data = await res.json();
+    exampleRows.appendChild(createExampleRow({ src: data.url }));
+    syncFormToState();
+    markDirty(adminState.selectedId);
+    showToast("图片已上传。");
+  } catch (error) {
+    showToast(`上传失败：${error.message}`);
+  }
+});
+
 function validateTemplates() {
   syncFormToState();
 
@@ -443,6 +484,7 @@ newTemplateButton.addEventListener("click", createTemplate);
 duplicateButton.addEventListener("click", duplicateTemplate);
 deleteButton.addEventListener("click", deleteTemplate);
 addExampleButton.addEventListener("click", addExample);
+uploadExampleButton.addEventListener("click", uploadExample);
 addVariableButton.addEventListener("click", addVariable);
 saveAllButton.addEventListener("click", saveAll);
 restoreDefaultsButton.addEventListener("click", restoreDefaults);
