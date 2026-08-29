@@ -14,4 +14,4 @@ pages_build_output_dir = "."
 [[d1_databases]]
 binding = "DB"
 database_name = "prompt-templates"
-database_id = "bd7becbd-726e-484f-a66f-6d65eb64eac3"
+database_id = "dd2da6f8-d50c-4892-bd0d-bbdbc4f9252c"
