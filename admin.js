@@ -1,4 +1,3 @@
-const ADMIN_PASSWORD_HASH = "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3";
 const LEGACY_STORAGE_KEY = "promptTemplates";
 const ALLOWED_CATEGORIES = ["生图", "文笔"];
 
@@ -10,12 +9,6 @@ const adminState = {
   expandedCategories: new Set(ALLOWED_CATEGORIES),
   dirtyTemplates: new Set(),
 };
-
-const adminShell = document.querySelector(".app-shell");
-const adminLoginOverlay = document.querySelector("#adminLoginOverlay");
-const loginForm = document.querySelector("#loginForm");
-const loginPasswordInput = document.querySelector("#loginPasswordInput");
-const loginError = document.querySelector("#loginError");
 
 const adminTemplateList = document.querySelector("#adminTemplateList");
 const adminSearch = document.querySelector("#adminSearch");
@@ -37,52 +30,38 @@ const addExampleButton = document.querySelector("#addExampleButton");
 const addVariableButton = document.querySelector("#addVariableButton");
 const saveAllButton = document.querySelector("#saveAllButton");
 const restoreDefaultsButton = document.querySelector("#restoreDefaultsButton");
-const exportButton = document.querySelector("#exportButton");
-const importButton = document.querySelector("#importButton");
-const importFile = document.querySelector("#importFile");
 const saveStatus = document.querySelector("#saveStatus");
-const themeToggleAdmin = document.querySelector("#themeToggle");
 const toastAdmin = document.querySelector("#toast");
 
-function loadAdminTemplates() {
+async function loadAdminTemplates() {
   try {
     localStorage.removeItem(LEGACY_STORAGE_KEY);
   } catch {
   }
 
+  // 先用内置数据兜底
   adminState.templates = structuredClone(window.PROMPT_DEFAULT_TEMPLATES || []);
   adminState.selectedId = adminState.templates[0]?.id || "";
+
+  // 再拉云端数据（有则覆盖，空/失败则保持兜底）
+  try {
+    const res = await fetch("/api/templates", {
+      headers: { Accept: "application/json" },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        adminState.templates = data;
+        adminState.selectedId = data[0]?.id || "";
+      }
+    }
+  } catch {
+    /* 接口不可用（本地/未部署）时保持内置兜底 */
+  }
 }
 
-async function hashText(text) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(text);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-async function authenticate(password) {
-  return (await hashText(password)) === ADMIN_PASSWORD_HASH;
-}
-
-function showLoginError(message) {
-  loginError.textContent = message;
-}
-
-function showAdminShell() {
-  adminLoginOverlay.hidden = true;
-  adminLoginOverlay.classList.add("hidden");
-  adminShell.hidden = false;
-  adminShell.classList.remove("hidden");
-  loginPasswordInput.value = "";
-  loginError.textContent = "";
-  initializeAdmin();
-}
-
-function initializeAdmin() {
-  loadAdminTemplates();
+async function initializeAdmin() {
+  await loadAdminTemplates();
   render();
 }
 
@@ -95,7 +74,7 @@ function markDirty(templateId) {
   if (templateId) {
     adminState.dirtyTemplates.add(templateId);
   }
-  saveStatus.textContent = "有未导出的修改。导出 JSON 后运行工具写回文件。";
+  saveStatus.textContent = "有未保存的修改。点「保存到云端」后前台生效。";
 }
 
 function showToast(message) {
@@ -159,6 +138,7 @@ function renderTemplateList() {
 
     const section = document.createElement("div");
     section.className = "admin-template-category";
+    section.dataset.category = category;
 
     const header = document.createElement("button");
     header.type = "button";
@@ -408,76 +388,43 @@ function validateTemplates() {
   return true;
 }
 
-function saveAll() {
+async function saveAll() {
   if (!validateTemplates()) return;
 
-  saveStatus.textContent = "模板格式正确。导出 JSON 后运行 node tools/apply-templates-json.js <文件名> 写回文件。";
-  showToast("模板格式正确。");
-  render();
+  try {
+    const res = await fetch("/api/admin/templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(adminState.templates),
+    });
+    if (!res.ok) {
+      let message = `HTTP ${res.status}`;
+      try {
+        const err = await res.json();
+        if (err && err.error) message = err.error;
+      } catch {
+      }
+      throw new Error(message);
+    }
+    adminState.dirty = false;
+    adminState.dirtyTemplates.clear();
+    saveStatus.textContent = "已保存到云端。";
+    showToast("已保存。");
+    render();
+  } catch (error) {
+    showToast(`保存失败：${error.message}`);
+  }
 }
 
-function restoreDefaults() {
-  const confirmed = window.confirm("确定恢复内置模板吗？这会覆盖当前后台里的未保存列表。");
+async function restoreDefaults() {
+  const confirmed = window.confirm("确定放弃未保存的修改，重新从云端加载吗？");
   if (!confirmed) return;
 
-  adminState.templates = structuredClone(window.PROMPT_DEFAULT_TEMPLATES || []);
-  adminState.selectedId = adminState.templates[0]?.id || "";
+  await loadAdminTemplates();
   adminState.dirty = false;
   adminState.dirtyTemplates.clear();
-  saveStatus.textContent = "模板只以文件为准。编辑后导出 JSON，再运行工具写回 script.js。";
+  saveStatus.textContent = "已重新加载云端数据。";
   render();
-}
-
-function exportJson() {
-  syncFormToState();
-  const blob = new Blob([JSON.stringify(adminState.templates, null, 2)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `prompt-templates-${today()}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
-  adminState.dirty = false;
-  adminState.dirtyTemplates.clear();
-  saveStatus.textContent = "已导出 JSON。运行 node tools/apply-templates-json.js <文件名> 写回 script.js。";
-  showToast("已导出 JSON。");
-}
-
-function importJson(file) {
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const data = JSON.parse(String(reader.result));
-      if (!Array.isArray(data)) throw new Error("JSON 必须是数组");
-
-      adminState.templates = data.map((template) => ({
-        id: template.id || uid(),
-        title: template.title || "未命名模板",
-        category: normalizeCategory(template.category || "文笔"),
-        description: template.description || "",
-        popularity: Number(template.popularity || 80),
-        date: template.date || today(),
-        variables: template.variables || {},
-        examples: Array.isArray(template.examples) ? template.examples : [],
-        prompt: template.prompt || "",
-      }));
-      adminState.selectedId = adminState.templates[0]?.id || "";
-      markDirty();
-      render();
-      showToast("JSON 已导入，导出并运行工具后前台生效。");
-    } catch (error) {
-      showToast(`导入失败：${error.message}`);
-    }
-  };
-  reader.readAsText(file);
-}
-
-function applyTheme(theme) {
-  document.documentElement.dataset.theme = theme;
-  localStorage.setItem("promptTheme", theme);
-  themeToggleAdmin.querySelector(".theme-icon").textContent = theme === "dark" ? "☀" : "☾";
 }
 
 adminForm.addEventListener("input", () => {
@@ -499,31 +446,6 @@ addExampleButton.addEventListener("click", addExample);
 addVariableButton.addEventListener("click", addVariable);
 saveAllButton.addEventListener("click", saveAll);
 restoreDefaultsButton.addEventListener("click", restoreDefaults);
-exportButton.addEventListener("click", exportJson);
-importButton.addEventListener("click", () => importFile.click());
-importFile.addEventListener("change", (event) => {
-  const [file] = event.target.files;
-  if (file) importJson(file);
-  event.target.value = "";
-});
-
-themeToggleAdmin.addEventListener("click", () => {
-  const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-  applyTheme(current === "dark" ? "light" : "dark");
-});
-
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const password = loginPasswordInput.value.trim();
-
-  if (await authenticate(password)) {
-    showAdminShell();
-  } else {
-    showLoginError("密码错误，请重试。");
-    loginPasswordInput.value = "";
-    loginPasswordInput.focus();
-  }
-});
 
 window.addEventListener("beforeunload", (event) => {
   if (!adminState.dirty) return;
@@ -531,6 +453,4 @@ window.addEventListener("beforeunload", (event) => {
   event.returnValue = "";
 });
 
-const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-applyTheme(preferredTheme);
-loginPasswordInput.focus();
+initializeAdmin();

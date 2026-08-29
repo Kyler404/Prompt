@@ -6,86 +6,10 @@
     <title>后台管理 | Prompt Studio</title>
     <meta name="description" content="管理 Prompt Studio 的生图与文笔提示词模板。" />
     <link rel="stylesheet" href="./styles.css" />
-    <style>
-      .admin-login-overlay {
-        position: fixed;
-        inset: 0;
-        display: grid;
-        place-items: center;
-        background: rgba(15, 23, 42, 0.92);
-        color: #ffffff;
-        z-index: 20;
-        padding: 1rem;
-      }
-      .admin-login-card {
-        width: min(100%, 420px);
-        background: #111827;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 24px;
-        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
-        padding: 2rem;
-      }
-      .admin-login-card h1 {
-        margin: 0 0 0.75rem;
-        font-size: 1.5rem;
-      }
-      .admin-login-field {
-        width: 100%;
-        padding: 0.9rem 1rem;
-        margin-top: 0.5rem;
-        border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        background: rgba(255, 255, 255, 0.06);
-        color: #ffffff;
-      }
-      .admin-login-actions {
-        margin-top: 1.25rem;
-      }
-      .admin-login-button {
-        width: 100%;
-        padding: 0.95rem 1.2rem;
-        border: none;
-        border-radius: 16px;
-        background: #2563eb;
-        color: #ffffff;
-        font-weight: 600;
-        cursor: pointer;
-      }
-      .admin-login-button:hover {
-        background: #1d4ed8;
-      }
-      .admin-login-error {
-        margin-top: 0.75rem;
-        min-height: 1.25rem;
-        color: #f87171;
-      }
-      .admin-login-overlay[hidden],
-      .admin-login-overlay.hidden {
-        display: none !important;
-      }
-      .app-shell[hidden] {
-        display: none !important;
-      }
-    </style>
+    <link rel="stylesheet" href="./admin-dark.css" />
   </head>
   <body data-page="admin">
-    <div class="admin-login-overlay" id="adminLoginOverlay">
-      <div class="admin-login-card">
-        <h1>管理员登录</h1>
-        <p>请输入密码以访问后台管理页面。</p>
-        <form id="loginForm">
-          <label class="field">
-            <span>密码</span>
-            <input id="loginPasswordInput" class="admin-login-field" type="password" autocomplete="current-password" required />
-          </label>
-          <div class="admin-login-actions">
-            <button class="admin-login-button" type="submit">登录</button>
-          </div>
-          <div id="loginError" class="admin-login-error" aria-live="polite"></div>
-        </form>
-      </div>
-    </div>
-    <div class="app-shell" hidden>
+    <div class="app-shell">
       <header class="site-header">
         <nav class="topbar" aria-label="后台导航">
           <a class="brand" href="./index.html" aria-label="返回前台">
@@ -98,9 +22,6 @@
 
           <div class="top-actions">
             <a class="admin-link" href="./index.html">查看前台</a>
-            <button class="icon-button" id="themeToggle" type="button" aria-label="切换深浅色主题">
-              <span class="theme-icon" aria-hidden="true">☾</span>
-            </button>
           </div>
         </nav>
       </header>
@@ -108,14 +29,12 @@
       <main>
         <section class="admin-hero">
           <div>
-            <p class="eyebrow">Local admin</p>
+            <p class="eyebrow">Cloud admin</p>
             <h1>管理生图与文笔模板</h1>
-            <p>维护两类创作模板、关键词变量与生图例图。导出 JSON 后可用工具写回本地文件。</p>
+            <p>维护两类创作模板、关键词变量与生图例图。改动会保存到云端，前台实时生效。</p>
           </div>
           <div class="admin-actions">
-            <button class="secondary-button" id="importButton" type="button">导入 JSON</button>
-            <button class="secondary-button" id="exportButton" type="button">导出 JSON</button>
-            <button class="primary-button" id="saveAllButton" type="button">校验模板</button>
+            <button class="primary-button" id="saveAllButton" type="button">保存到云端</button>
           </div>
         </section>
 
@@ -202,15 +121,14 @@
             </form>
 
             <div class="admin-bottom-actions">
-              <button class="secondary-button" id="restoreDefaultsButton" type="button">恢复内置模板</button>
-              <span id="saveStatus">模板只以文件为准。编辑后导出 JSON，再运行工具写回 script.js。</span>
+              <button class="secondary-button" id="restoreDefaultsButton" type="button">放弃修改</button>
+              <span id="saveStatus">改动会保存到云端。点「保存到云端」后前台实时生效。</span>
             </div>
           </section>
         </section>
       </main>
     </div>
 
-    <input id="importFile" type="file" accept="application/json,.json" hidden />
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="./script.js"></script>

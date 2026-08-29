@@ -128,7 +128,8 @@ const defaultTemplates = [
   }
 ];
 
-const templates = defaultTemplates;
+// 模板数据源：先用内置兜底，前台 fetch 到云端数据后再覆盖（见文件末尾的加载逻辑）
+let templates = defaultTemplates;
 window.PROMPT_DEFAULT_TEMPLATES = defaultTemplates;
 
 if (document.body.dataset.page !== "admin") {
@@ -156,7 +157,6 @@ if (document.body.dataset.page !== "admin") {
   const resetVariables = document.querySelector("#resetVariables");
   const clearFilters = document.querySelector("#clearFilters");
   const favoriteButton = document.querySelector("#favoriteButton");
-  const themeToggle = document.querySelector("#themeToggle");
   const toast = document.querySelector("#toast");
   const emptyState = document.querySelector("#emptyState");
   const editorPanel = document.querySelector(".editor-panel");
@@ -202,6 +202,7 @@ if (document.body.dataset.page !== "admin") {
       const button = document.createElement("button");
       button.className = `category-button${state.selectedCategory === category ? " active" : ""}`;
       button.type = "button";
+      button.dataset.category = category;
       button.innerHTML = `<span>${category}</span><span class="count">${count}</span>`;
       button.addEventListener("click", () => {
         state.selectedCategory = category;
@@ -248,6 +249,7 @@ if (document.body.dataset.page !== "admin") {
       const button = document.createElement("button");
       button.type = "button";
       button.className = `template-card${template.id === state.selectedTemplateId ? " active" : ""}`;
+      button.dataset.category = template.category;
       button.innerHTML = `
         <div class="card-topline">
           <span class="tag">${template.category}</span>
@@ -471,12 +473,6 @@ if (document.body.dataset.page !== "admin") {
     showToast(`已切换到「${next.title}」。`);
   }
 
-  function applyTheme(theme) {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem("promptTheme", theme);
-    themeToggle.querySelector(".theme-icon").textContent = theme === "dark" ? "☀" : "☾";
-  }
-
   searchInput.addEventListener("input", (event) => {
     state.query = event.target.value;
     renderTemplates();
@@ -512,12 +508,23 @@ if (document.body.dataset.page !== "admin") {
     render();
   });
 
-  themeToggle.addEventListener("click", () => {
-    const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-    applyTheme(current === "dark" ? "light" : "dark");
-  });
-
-  const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  applyTheme(preferredTheme);
+  // 首屏用内置兜底渲染，再异步拉云端数据覆盖（失败则保持兜底）
   render();
+  loadRemoteTemplates();
+
+  async function loadRemoteTemplates() {
+    try {
+      const res = await fetch("/api/templates", {
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        templates = data;
+        render();
+      }
+    } catch {
+      /* 接口不可用（本地/未部署）时保持内置兜底 */
+    }
+  }
 }

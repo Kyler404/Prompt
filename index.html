@@ -8,7 +8,14 @@
       name="description"
       content="专注生图与文笔两类创作提示词，可查看例图、编辑关键词并一键复制。"
     />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@700;900&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./app-dark.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -28,23 +35,22 @@
               <span class="search-icon" aria-hidden="true">⌕</span>
               <input id="searchInput" type="search" placeholder="搜索模板、场景或关键词" />
             </label>
-            <button class="icon-button" id="themeToggle" type="button" aria-label="切换深浅色主题">
-              <span class="theme-icon" aria-hidden="true">☾</span>
-            </button>
           </div>
         </nav>
       </header>
 
       <main>
         <section class="hero">
+          <canvas id="heroCanvas" aria-hidden="true"></canvas>
+          <div class="hero-ghost" aria-hidden="true">STUDIO</div>
           <div class="hero-copy">
-            <p class="eyebrow">Prompt atelier</p>
-            <h1>把灵感收束成可复制的创作指令。</h1>
-            <p>
+            <p class="eyebrow" data-reveal style="--i: 0">Prompt Studio · 生图 × 文笔</p>
+            <h1 data-reveal style="--i: 1">把灵感，炼成一句<span class="accent">提示词。</span></h1>
+            <p data-reveal style="--i: 2">
               只保留「生图」与「文笔」两条主线。左侧选方向，中间挑模板，右侧改关键词、看例图、复制成稿。
             </p>
           </div>
-          <div class="hero-panel" aria-label="创作概览">
+          <div class="hero-panel" aria-label="创作概览" data-reveal style="--i: 3">
             <div class="hero-panel-feature">
               <span>当前方向</span>
               <strong id="heroCategory">生图</strong>
@@ -150,5 +156,78 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="./script.js"></script>
+    <script>
+      // hero 粒子流光背景（电青 + 琥珀），reduced-motion 下降级为静态帧
+      (function () {
+        var canvas = document.getElementById("heroCanvas");
+        if (!canvas || !canvas.getContext) return;
+        var ctx = canvas.getContext("2d");
+        var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var W = 0, H = 0, dpr = 1, raf = null;
+        var particles = [];
+        var NEON = [
+          { glow: "rgba(96, 226, 214, " },
+          { glow: "rgba(255, 190, 96, " },
+        ];
+
+        function resize() {
+          dpr = Math.min(window.devicePixelRatio || 1, 2);
+          W = canvas.clientWidth;
+          H = canvas.clientHeight;
+          canvas.width = W * dpr;
+          canvas.height = H * dpr;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          seed();
+        }
+        function make() {
+          return {
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: 0.6 + Math.random() * 1.8,
+            vx: (Math.random() - 0.5) * 0.2,
+            vy: -0.06 - Math.random() * 0.3,
+            hue: Math.random() < 0.6 ? 0 : 1,
+            a: 0.2 + Math.random() * 0.5,
+            tw: Math.random() * Math.PI * 2,
+            tws: 0.006 + Math.random() * 0.018,
+          };
+        }
+        function seed() {
+          var area = W * H;
+          var count = Math.min(110, Math.max(36, Math.round(area / 11000)));
+          particles = [];
+          for (var i = 0; i < count; i++) particles.push(make());
+        }
+        function step() {
+          ctx.clearRect(0, 0, W, H);
+          ctx.globalCompositeOperation = "lighter";
+          for (var i = 0; i < particles.length; i++) {
+            var p = particles[i];
+            p.x += p.vx + Math.sin(p.tw) * 0.1;
+            p.y += p.vy;
+            p.tw += p.tws;
+            if (p.y < -20) { p.y = H + 20; p.x = Math.random() * W; }
+            if (p.x < -20) p.x = W + 20;
+            if (p.x > W + 20) p.x = -20;
+            var alpha = p.a * (0.6 + 0.4 * Math.sin(p.tw));
+            var n = NEON[p.hue];
+            ctx.beginPath();
+            ctx.fillStyle = n.glow + alpha.toFixed(3) + ")";
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.fillStyle = n.glow + (alpha * 0.3).toFixed(3) + ")";
+            ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.globalCompositeOperation = "source-over";
+        }
+        function loop() { step(); raf = requestAnimationFrame(loop); }
+
+        resize();
+        window.addEventListener("resize", resize);
+        if (reduceMotion) { step(); } else { raf = requestAnimationFrame(loop); }
+      })();
+    </script>
   </body>
 </html>
