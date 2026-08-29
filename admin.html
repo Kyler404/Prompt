@@ -8,8 +8,8 @@
     <!-- 静态资源带版本号：Cloudflare Pages 给 JS/CSS 的缓存是 max-age=14400（4 小时），
          而 HTML 是 max-age=0 永远最新。改完 JS 若不 ?v= 加一，浏览器会拿「新 HTML + 旧 JS」，
          旧脚本找不到已删除的元素就会整页崩溃（表现为后台空白）。改 JS/CSS 记得同步 +1。 -->
-    <link rel="stylesheet" href="./styles.css?v=1.0.8" />
-    <link rel="stylesheet" href="./admin-dark.css?v=1.0.8" />
+    <link rel="stylesheet" href="./styles.css?v=1.0.9" />
+    <link rel="stylesheet" href="./admin-dark.css?v=1.0.9" />
     <script>
       // 早期错误兜底：脚本崩溃时给出可操作的提示，而不是白屏
       window.addEventListener("error", function (event) {
@@ -149,7 +149,7 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="./script.js?v=1.0.8"></script>
-    <script src="./admin.js?v=1.0.8"></script>
+    <script src="./script.js?v=1.0.9"></script>
+    <script src="./admin.js?v=1.0.9"></script>
   </body>
 </html>

@@ -8,7 +8,48 @@ const adminState = {
   dirty: false,
   expandedCategories: new Set(ALLOWED_CATEGORIES),
   dirtyTemplates: new Set(),
+  // 上次成功加载/保存时的例图 URL 集合。
+  // 保存成功后与当前集合做差集，差出来的就是可以安全删除的孤儿文件。
+  baselineSrcs: new Set(),
 };
+
+// 只有落在我们自己的图片域名下的 URL 才允许被删除，避免误删外链图
+const IMAGE_BASE = "https://img.guoke404.xin/";
+
+function collectExampleSources() {
+  const set = new Set();
+  adminState.templates.forEach((template) => {
+    (Array.isArray(template.examples) ? template.examples : []).forEach((example) => {
+      if (example && example.src) set.add(example.src);
+    });
+  });
+  return set;
+}
+
+function findOrphanImages() {
+  const current = collectExampleSources();
+  return [...adminState.baselineSrcs].filter(
+    (src) => !current.has(src) && String(src).startsWith(IMAGE_BASE),
+  );
+}
+
+async function deleteOrphanImages(urls) {
+  try {
+    const res = await fetch("/api/admin/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urls }),
+    });
+    if (!res.ok) return { deleted: [], failed: urls.map((url) => ({ url })) };
+    const data = await res.json();
+    return {
+      deleted: Array.isArray(data.deleted) ? data.deleted : [],
+      failed: Array.isArray(data.failed) ? data.failed : [],
+    };
+  } catch (error) {
+    return { deleted: [], failed: urls.map((url) => ({ url, error: error.message })) };
+  }
+}
 
 const adminTemplateList = document.querySelector("#adminTemplateList");
 const adminSearch = document.querySelector("#adminSearch");
@@ -58,6 +99,9 @@ async function loadAdminTemplates() {
   } catch {
     /* 接口不可用（本地/未部署）时保持内置兜底 */
   }
+
+  // 记录基线：这是云端（或兜底数据）当前引用的例图，之后保存时用来算孤儿
+  adminState.baselineSrcs = collectExampleSources();
 }
 
 async function initializeAdmin() {
@@ -463,8 +507,31 @@ async function saveAll() {
     }
     adminState.dirty = false;
     adminState.dirtyTemplates.clear();
-    saveStatus.textContent = "已保存到云端。";
-    showToast("已保存。");
+
+    // 云端数据已落库，此时才清理不再被引用的旧图文件（保存前删会有裂图风险）
+    const orphans = findOrphanImages();
+    if (orphans.length) {
+      saveStatus.textContent = `已保存，正在清理 ${orphans.length} 个旧图片文件…`;
+      const result = await deleteOrphanImages(orphans);
+      const removed = result.deleted.length;
+      const failed = result.failed.length;
+      if (failed) {
+        saveStatus.textContent = `已保存。清理了 ${removed} 个旧文件，${failed} 个失败。`;
+        showToast(`已保存，但有 ${failed} 个旧图片文件删除失败（不影响前台显示）。`);
+      } else if (removed) {
+        saveStatus.textContent = `已保存到云端，并清理了 ${removed} 个旧图片文件。`;
+        showToast(`已保存，清理了 ${removed} 个旧图片文件。`);
+      } else {
+        saveStatus.textContent = "已保存到云端。";
+        showToast("已保存。");
+      }
+    } else {
+      saveStatus.textContent = "已保存到云端。";
+      showToast("已保存。");
+    }
+
+    // 清理完再刷新基线，避免同一批孤儿被重复提交
+    adminState.baselineSrcs = collectExampleSources();
     render();
   } catch (error) {
     showToast(`保存失败：${error.message}`);
