@@ -1,0 +1,5 @@
+# 本地 Wrangler 配置（含 D1 database_id，不入库）
+# 注意：Cloudflare Pages 一旦在仓库里检测到 wrangler.toml，
+# 就会强制切成「Wrangler 驱动部署」并要求填写部署命令，导致 Git 集成部署失败。
+# 线上 D1 绑定请在 Dashboard 配置：Pages 项目 → Settings → Functions → D1 database bindings（变量名 DB）
+wrangler.toml
