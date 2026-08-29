@@ -26,7 +26,6 @@ const variableRows = document.querySelector("#variableRows");
 const newTemplateButton = document.querySelector("#newTemplateButton");
 const duplicateButton = document.querySelector("#duplicateButton");
 const deleteButton = document.querySelector("#deleteButton");
-const addExampleButton = document.querySelector("#addExampleButton");
 const uploadExampleButton = document.querySelector("#uploadExampleButton");
 const addVariableButton = document.querySelector("#addVariableButton");
 const saveAllButton = document.querySelector("#saveAllButton");
@@ -213,20 +212,15 @@ function createVariableRow(key = "", value = "") {
 function createExampleRow(example = {}) {
   const row = document.createElement("div");
   row.className = "example-row";
+  row.dataset.src = example.src || "";
   row.innerHTML = `
-    <input class="example-src" placeholder="图片地址，或点上方「上传图片」" value="${escapeAttribute(example.src || "")}" />
-    <button class="icon-button example-remove" type="button" aria-label="删除例图">×</button>
+    <img class="example-thumb" src="${escapeAttribute(example.src || "")}" alt="例图预览" loading="lazy" />
+    <button class="example-remove" type="button" aria-label="删除例图">×</button>
   `;
   row.querySelector(".example-remove").addEventListener("click", () => {
     row.remove();
     syncFormToState();
     markDirty(adminState.selectedId);
-  });
-  row.querySelectorAll("input").forEach((input) => {
-    input.addEventListener("input", () => {
-      syncFormToState();
-      markDirty(adminState.selectedId);
-    });
   });
   return row;
 }
@@ -291,7 +285,7 @@ function syncFormToState() {
   template.variables = {};
 
   exampleRows.querySelectorAll(".example-row").forEach((row) => {
-    const src = row.querySelector(".example-src").value.trim();
+    const src = (row.dataset.src || "").trim();
     if (src) template.examples.push({ src });
   });
 
@@ -366,16 +360,16 @@ function addVariable() {
   markDirty(adminState.selectedId);
 }
 
-function addExample() {
-  exampleRows.appendChild(createExampleRow({ src: "" }));
-  syncFormToState();
-  markDirty(adminState.selectedId);
-}
-
-// —— 上传图片到 R2 ——
+// —— 上传例图到 R2 ——
+// 命名规则（服务端统一生成，前端只传序号）：
+//   t{模板序号}-{例图序号}.{扩展名}
+//   模板序号 = 该模板在后台列表中的位置（1 起）
+//   例图序号 = 该模板下第几张例图（1 起）
+// 例：列表第 3 个模板的第 2 张例图 → t3-2.webp
 const uploadInput = document.createElement("input");
 uploadInput.type = "file";
 uploadInput.accept = "image/*";
+uploadInput.multiple = true;
 uploadInput.hidden = true;
 document.body.appendChild(uploadInput);
 
@@ -384,31 +378,51 @@ function uploadExample() {
 }
 
 uploadInput.addEventListener("change", async () => {
-  const [file] = uploadInput.files;
-  if (!file) return;
+  const files = Array.from(uploadInput.files || []);
   uploadInput.value = "";
+  if (!files.length) return;
 
-  showToast("上传中…");
-  try {
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-    if (!res.ok) {
-      let message = `HTTP ${res.status}`;
-      try {
-        const err = await res.json();
-        if (err && err.error) message = err.error;
-      } catch {
+  const template = getSelectedTemplate();
+  if (!template) {
+    showToast("请先选择一个模板。");
+    return;
+  }
+
+  const templateIndex = adminState.templates.findIndex((item) => item.id === template.id) + 1;
+  let exampleIndex = exampleRows.querySelectorAll(".example-row").length;
+  let uploaded = 0;
+
+  for (const file of files) {
+    exampleIndex += 1;
+    showToast(`上传中…（第 ${exampleIndex} 张）`);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("templateIndex", String(templateIndex));
+      fd.append("exampleIndex", String(exampleIndex));
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      if (!res.ok) {
+        let message = `HTTP ${res.status}`;
+        try {
+          const err = await res.json();
+          if (err && err.error) message = err.error;
+        } catch {
+        }
+        throw new Error(message);
       }
-      throw new Error(message);
+      const data = await res.json();
+      exampleRows.appendChild(createExampleRow({ src: data.url }));
+      syncFormToState();
+      markDirty(adminState.selectedId);
+      uploaded += 1;
+    } catch (error) {
+      showToast(`第 ${exampleIndex} 张上传失败：${error.message}`);
+      break;
     }
-    const data = await res.json();
-    exampleRows.appendChild(createExampleRow({ src: data.url }));
-    syncFormToState();
-    markDirty(adminState.selectedId);
-    showToast("图片已上传。");
-  } catch (error) {
-    showToast(`上传失败：${error.message}`);
+  }
+
+  if (uploaded) {
+    showToast(`已上传 ${uploaded} 张例图，记得保存。`);
   }
 });
 
@@ -483,7 +497,6 @@ adminSearch.addEventListener("input", (event) => {
 newTemplateButton.addEventListener("click", createTemplate);
 duplicateButton.addEventListener("click", duplicateTemplate);
 deleteButton.addEventListener("click", deleteTemplate);
-addExampleButton.addEventListener("click", addExample);
 uploadExampleButton.addEventListener("click", uploadExample);
 addVariableButton.addEventListener("click", addVariable);
 saveAllButton.addEventListener("click", saveAll);

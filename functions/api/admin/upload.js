@@ -10,6 +10,24 @@ const PUBLIC_BASE = "https://img.guoke404.xin";
 // （PNG 原图动辄 1-3MB，转 WebP 后通常只剩 5%）
 const MAX_SIZE = 1024 * 1024; // 1MB
 
+// 命名规则：t{模板序号}-{例图序号}.{扩展名}
+//   模板序号 templateIndex：该模板在后台列表中的位置，1 起
+//   例图序号 exampleIndex ：该模板下的第几张例图，1 起
+//   例：第 3 个模板的第 2 张 → t3-2.webp → https://img.guoke404.xin/t3-2.webp
+// 同一序号重复上传会覆盖旧图（方便直接替换，不用先删）。
+function buildKey(templateIndex, exampleIndex, ext) {
+  const safeExt = /^[a-z0-9]{1,5}$/.test(ext) ? ext : "webp";
+  const t = clampIndex(templateIndex);
+  const e = clampIndex(exampleIndex);
+  return `t${t}-${e}.${safeExt}`;
+}
+
+function clampIndex(value) {
+  const n = Number.parseInt(value, 10);
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return Math.min(n, 999);
+}
+
 export async function onRequestPost(context) {
   const { env, request } = context;
   try {
@@ -27,24 +45,33 @@ export async function onRequestPost(context) {
       );
     }
 
-    const originalName = String(file.name || "image.png").toLowerCase();
+    const originalName = String(file.name || "image.webp").toLowerCase();
     const ext = originalName.includes(".")
       ? originalName.split(".").pop()
-      : "png";
-    const safeExt = /^[a-z0-9]{1,5}$/.test(ext) ? ext : "png";
+      : "webp";
 
-    const key = `examples/${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2, 8)}.${safeExt}`;
+    const key = buildKey(
+      formData.get("templateIndex"),
+      formData.get("exampleIndex"),
+      ext,
+    );
 
     await env.BUCKET.put(key, file.stream(), {
-      httpMetadata: { contentType: file.type || "image/png" },
+      httpMetadata: { contentType: file.type || contentTypeOf(ext) },
     });
 
     return json({ url: `${PUBLIC_BASE}/${key}` });
   } catch (err) {
     return json({ error: String((err && err.message) || err) }, { status: 500 });
   }
+}
+
+function contentTypeOf(ext) {
+  if (ext === "webp") return "image/webp";
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
+  if (ext === "gif") return "image/gif";
+  if (ext === "avif") return "image/avif";
+  return "image/png";
 }
 
 function json(data, init = {}) {
