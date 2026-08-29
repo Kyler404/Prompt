@@ -9,12 +9,12 @@ const defaultTemplates = [
     "variables": {},
     "examples": [
       {
-        "src": "https://img.guoke404.xin/5-1.png",
+        "src": "https://img.guoke404.xin/5-1.webp",
         "title": "",
         "description": ""
       },
       {
-        "src": "https://img.guoke404.xin/5-2.png",
+        "src": "https://img.guoke404.xin/5-2.webp",
         "title": "",
         "description": ""
       }
@@ -33,7 +33,7 @@ const defaultTemplates = [
     },
     "examples": [
       {
-        "src": "https://img.guoke404.xin/4.png",
+        "src": "https://img.guoke404.xin/4.webp",
         "title": "",
         "description": ""
       }
@@ -50,7 +50,7 @@ const defaultTemplates = [
     "variables": {},
     "examples": [
       {
-        "src": "https://img.guoke404.xin/1.png",
+        "src": "https://img.guoke404.xin/1.webp",
         "title": "",
         "description": ""
       }
@@ -67,7 +67,7 @@ const defaultTemplates = [
     "variables": {},
     "examples": [
       {
-        "src": "https://img.guoke404.xin/3.png",
+        "src": "https://img.guoke404.xin/3.webp",
         "title": "",
         "description": ""
       }
@@ -88,7 +88,7 @@ const defaultTemplates = [
     },
     "examples": [
       {
-        "src": "https://img.guoke404.xin/0.png",
+        "src": "https://img.guoke404.xin/0.webp",
         "title": "",
         "description": ""
       }

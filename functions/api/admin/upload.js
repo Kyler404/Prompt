@@ -6,6 +6,10 @@
 
 const PUBLIC_BASE = "https://img.guoke404.xin";
 
+// 体积上限：超过就拒绝，避免原图直传导致前台加载卡顿
+// （PNG 原图动辄 1-3MB，转 WebP 后通常只剩 5%）
+const MAX_SIZE = 1024 * 1024; // 1MB
+
 export async function onRequestPost(context) {
   const { env, request } = context;
   try {
@@ -13,6 +17,14 @@ export async function onRequestPost(context) {
     const file = formData.get("file");
     if (!file || typeof file === "string") {
       return json({ error: "缺少图片文件" }, { status: 400 });
+    }
+    if (file.size > MAX_SIZE) {
+      return json(
+        {
+          error: `图片 ${(file.size / 1024 / 1024).toFixed(1)}MB 超过 1MB 上限，请先压缩再上传`,
+        },
+        { status: 400 },
+      );
     }
 
     const originalName = String(file.name || "image.png").toLowerCase();
