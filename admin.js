@@ -24,6 +24,25 @@ function normalizeDescription(value) {
   return text === DESCRIPTION_PLACEHOLDER ? "" : text;
 }
 
+// 模板短码：由模板 id 派生的固定标识（取 id 末尾 6 位字母数字）。
+// 与模板在列表中的位置无关，增删、排序、改名都不会变，
+// 所以例图文件名不会跟着漂移，更不会撞上别的模板正在用的文件。
+function templateSlug(template) {
+  const raw = String((template && template.id) || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  if (raw.length >= 6) return raw.slice(-6);
+  if (raw) return raw;
+
+  // 极端兜底（没有 id）：用标题生成稳定短码，保证同一模板每次结果一致
+  const seed = String((template && template.title) || "template");
+  let hash = 0;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 33 + seed.charCodeAt(index)) >>> 0;
+  }
+  return hash.toString(36).padStart(6, "0").slice(-6);
+}
+
 // 热度：8 星制（1-8），缺省 4 星
 const STAR_MAX = 8;
 const STAR_DEFAULT = 4;
@@ -456,11 +475,13 @@ function addVariable() {
 }
 
 // —— 上传例图到 R2 ——
-// 命名规则（服务端统一生成，前端只传序号）：
-//   t{模板序号}-{例图序号}.{扩展名}
-//   模板序号 = 该模板在后台列表中的位置（1 起）
+// 命名规则（服务端统一生成，前端只传短码 + 序号）：
+//   t{模板短码}-{例图序号}.{扩展名}
+//   模板短码 = 由模板 id 派生的固定短码，与模板在列表中的位置无关。
+//              早期用「列表位置」当序号，新增模板插到最前会让所有位置下移，
+//              新模板就会复用到别的模板正在用的文件名，把对方的图直接覆盖掉。
 //   例图序号 = 该模板下第几张例图（1 起）
-// 例：列表第 3 个模板的第 2 张例图 → t3-2.webp
+// 例：某模板短码 4578a 的第 2 张 → t4578a-2.webp
 const uploadInput = document.createElement("input");
 uploadInput.type = "file";
 uploadInput.accept = "image/*";
@@ -483,17 +504,41 @@ uploadInput?.addEventListener("change", async () => {
     return;
   }
 
-  const templateIndex = adminState.templates.findIndex((item) => item.id === template.id) + 1;
+  const slug = templateSlug(template);
+  // 已被别的模板占用的文件名，绝不能覆盖过去
+  const usedByOthers = new Set(
+    adminState.templates
+      .filter((item) => item.id !== template.id)
+      .flatMap((item) => (Array.isArray(item.examples) ? item.examples : []))
+      .map((example) => String(example.src || "")),
+  );
+  const extOf = (name) => {
+    const lower = String(name || "").toLowerCase();
+    return lower.includes(".") ? lower.split(".").pop() : "webp";
+  };
+
   let exampleIndex = exampleRows.querySelectorAll(".example-row").length;
   let uploaded = 0;
 
   for (const file of files) {
-    exampleIndex += 1;
+    const ext = extOf(file.name);
+    // 跳过会撞车的序号：既不能覆盖别人正在用的文件，也不能覆盖本轮刚传的
+    let guard = 0;
+    let candidate = exampleIndex + 1;
+    while (
+      usedByOthers.has(`${IMAGE_BASE}t${slug}-${candidate}.${ext}`) &&
+      guard < 999
+    ) {
+      candidate += 1;
+      guard += 1;
+    }
+    exampleIndex = candidate;
+
     showToast(`上传中…（第 ${exampleIndex} 张）`);
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("templateIndex", String(templateIndex));
+      fd.append("slug", slug);
       fd.append("exampleIndex", String(exampleIndex));
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
       if (!res.ok) {
@@ -533,6 +578,27 @@ function validateTemplates() {
     if (!template.id) template.id = uid();
     if (!template.variables) template.variables = {};
     if (!Array.isArray(template.examples)) template.examples = [];
+  }
+
+  // 同一张图被多个模板引用 = 上传时选错了模板，保存前拦一下
+  const owners = new Map();
+  adminState.templates.forEach((template) => {
+    (Array.isArray(template.examples) ? template.examples : []).forEach((example) => {
+      const src = String((example && example.src) || "").trim();
+      if (!src) return;
+      if (!owners.has(src)) owners.set(src, []);
+      owners.get(src).push(template.title || "未命名模板");
+    });
+  });
+  const shared = [...owners.entries()].filter(([, titles]) => titles.length > 1);
+  if (shared.length) {
+    const detail = shared
+      .map(([src, titles]) => `· ${src.split("/").pop()}  →  ${titles.join(" / ")}`)
+      .join("\n");
+    const confirmed = window.confirm(
+      `有 ${shared.length} 张例图被多个模板同时引用，通常是上传时选错了模板：\n\n${detail}\n\n确定还要保存吗？`,
+    );
+    if (!confirmed) return false;
   }
 
   return true;

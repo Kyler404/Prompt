@@ -10,16 +10,28 @@ const PUBLIC_BASE = "https://img.guoke404.xin";
 // （PNG 原图动辄 1-3MB，转 WebP 后通常只剩 5%）
 const MAX_SIZE = 1024 * 1024; // 1MB
 
-// 命名规则：t{模板序号}-{例图序号}.{扩展名}
-//   模板序号 templateIndex：该模板在后台列表中的位置，1 起
+// 命名规则：t{模板短码}-{例图序号}.{扩展名}
+//   模板短码 slug：由模板 id 派生的固定短码（见前端 templateSlug），与模板在列表中的
+//                  位置无关 —— 增删/排序模板都不会让它变化，因此不会撞上别的模板的文件。
 //   例图序号 exampleIndex ：该模板下的第几张例图，1 起
-//   例：第 3 个模板的第 2 张 → t3-2.webp → https://img.guoke404.xin/t3-2.webp
-// 同一序号重复上传会覆盖旧图（方便直接替换，不用先删）。
-function buildKey(templateIndex, exampleIndex, ext) {
+//   例：某模板短码 4578a 的第 2 张 → t4578a-2.webp
+//
+// ⚠️ 早期版本用的是「模板在数组中的位置」当序号，新增模板会被 unshift 到最前面，
+//    导致所有位置下移、新模板复用到别的模板正在用的文件名，直接把对方的图覆盖掉。
+//    所以改成绑定模板 id，位置再怎么变都不会撞车。
+//
+// 同一短码 + 同一序号重复上传会覆盖旧图（方便直接替换，不用先删）。
+function buildKey(slug, exampleIndex, ext) {
   const safeExt = /^[a-z0-9]{1,5}$/.test(ext) ? ext : "webp";
-  const t = clampIndex(templateIndex);
+  const s = safeSlug(slug);
   const e = clampIndex(exampleIndex);
-  return `t${t}-${e}.${safeExt}`;
+  return `t${s}-${e}.${safeExt}`;
+}
+
+function safeSlug(value) {
+  const raw = String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (!raw) return "unknown";
+  return raw.slice(0, 12);
 }
 
 function clampIndex(value) {
@@ -51,7 +63,7 @@ export async function onRequestPost(context) {
       : "webp";
 
     const key = buildKey(
-      formData.get("templateIndex"),
+      formData.get("slug"),
       formData.get("exampleIndex"),
       ext,
     );
