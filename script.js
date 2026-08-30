@@ -223,6 +223,20 @@ if (document.body.dataset.page !== "admin") {
     });
   }
 
+  // 收藏按钮状态：加 is-on 后爱心变红（样式见 .favorite-button.is-on）
+  function setFavoriteState(isFavorite) {
+    favoriteButton.classList.toggle("is-on", isFavorite);
+    const heart = favoriteButton.querySelector(".heart");
+    if (heart) heart.textContent = isFavorite ? "♥" : "♡";
+  }
+
+  // 点击特效：弹跳 + 扩散光圈。移除再强制重排，动画才能连续触发
+  function playFavoriteBurst() {
+    favoriteButton.classList.remove("is-animating");
+    void favoriteButton.offsetWidth;
+    favoriteButton.classList.add("is-animating");
+  }
+
   function renderEditor() {
     const template = getSelectedTemplate();
 
@@ -230,7 +244,7 @@ if (document.body.dataset.page !== "admin") {
       editorPanel.hidden = true;
       editorTitle.textContent = "选择一个模板";
       editorDescription.textContent = "从模板库选择一个提示词，这里会显示可修改的关键词、例图和实时预览。";
-      favoriteButton.innerHTML = `<span aria-hidden="true">♡</span>`;
+      setFavoriteState(false);
       copyButton.disabled = true;
       exampleGallery.hidden = true;
       exampleGalleryGrid.innerHTML = "";
@@ -244,7 +258,7 @@ if (document.body.dataset.page !== "admin") {
 
     editorTitle.textContent = template.title;
     editorDescription.textContent = template.description;
-    favoriteButton.innerHTML = `<span aria-hidden="true">${state.favorites.has(template.id) ? "♥" : "♡"}</span>`;
+    setFavoriteState(state.favorites.has(template.id));
     copyButton.disabled = false;
     renderExampleGallery(template);
 
@@ -402,6 +416,7 @@ if (document.body.dataset.page !== "admin") {
     }
     saveFavorites();
     render();
+    playFavoriteBurst();
   }
 
   function resetCurrentVariables() {

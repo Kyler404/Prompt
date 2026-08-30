@@ -22,6 +22,10 @@
   --warm-soft: rgba(245, 158, 11, 0.12);
   --danger: #dc2626;
   --danger-soft: rgba(220, 38, 38, 0.10);
+  /* 收藏爱心红 */
+  --heart: #e11d48;
+  /* 热度星星黄 */
+  --star: #f5a623;
 
   --shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
   --shadow-lg: 0 28px 70px rgba(15, 23, 42, 0.12);
@@ -60,6 +64,8 @@
   --warm-soft: rgba(251, 191, 36, 0.15);
   --danger: #f87171;
   --danger-soft: rgba(248, 113, 113, 0.12);
+  --heart: #fb7185;
+  --star: #fbbf24;
 
   --shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
   --shadow-lg: 0 32px 80px rgba(0, 0, 0, 0.46);
@@ -211,6 +217,8 @@ button {
   border-radius: var(--radius);
   color: var(--text);
   background: var(--surface-strong);
+  /* 这些类也会用在 <a> 上，浏览器默认给链接加下划线，去掉 */
+  text-decoration: none;
   transition:
     transform 180ms var(--ease-out-quart),
     border-color 180ms var(--ease-out-quart),
@@ -285,6 +293,88 @@ button {
   color: var(--muted);
   font-size: 14px;
   font-weight: 500;
+}
+
+/* —— 收藏按钮：收藏后爱心变红，点击时弹跳 + 扩散光圈 —— */
+.favorite-button {
+  position: relative;
+  font-size: 20px;
+}
+
+.favorite-button .heart {
+  display: inline-block;
+  line-height: 1;
+  color: var(--muted-weak);
+  transition:
+    color 220ms var(--ease-out-quart),
+    transform 220ms var(--ease-out-quart);
+}
+
+.favorite-button:hover .heart {
+  color: var(--heart);
+  transform: scale(1.12);
+}
+
+.favorite-button.is-on {
+  border-color: color-mix(in srgb, var(--heart) 45%, var(--line));
+  background: color-mix(in srgb, var(--heart) 10%, var(--surface-strong));
+}
+
+.favorite-button.is-on .heart {
+  color: var(--heart);
+}
+
+/* 弹跳 */
+@keyframes favorite-pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.45);
+  }
+  62% {
+    transform: scale(0.88);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 扩散光圈 */
+@keyframes favorite-ring {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.65;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.favorite-button::after {
+  position: absolute;
+  inset: -1px;
+  content: "";
+  border: 2px solid var(--heart);
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.favorite-button.is-animating .heart {
+  animation: favorite-pop 460ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.favorite-button.is-animating::after {
+  animation: favorite-ring 560ms var(--ease-out-quart);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .favorite-button.is-animating .heart,
+  .favorite-button.is-animating::after {
+    animation: none;
+  }
 }
 
 .hero {
@@ -676,7 +766,7 @@ button {
 }
 
 .favorite {
-  color: var(--warm);
+  color: var(--heart);
 }
 
 .template-card h3 {
@@ -1280,11 +1370,11 @@ pre {
 
 .star-picker .star:hover {
   transform: scale(1.2);
-  color: var(--accent);
+  color: var(--star);
 }
 
 .star-picker .star.is-on {
-  color: var(--accent);
+  color: var(--star);
 }
 
 .stars {
@@ -1302,7 +1392,7 @@ pre {
 }
 
 .stars .star.is-on {
-  color: var(--accent);
+  color: var(--star);
 }
 
 .field-hint {

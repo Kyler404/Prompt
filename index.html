@@ -11,8 +11,8 @@
     <!-- 字体走系统栈，不引外部 CDN：国内访问 Google Fonts 会阻塞渲染导致白屏 -->
     <!-- 静态资源带版本号：JS/CSS 缓存 4 小时、HTML 每次最新，改完 JS 必须把 ?v= 加一，
          否则浏览器会拿「新 HTML + 旧 JS」，旧脚本找不到已删元素会整页崩溃（白屏）。 -->
-    <link rel="stylesheet" href="./styles.css?v=1.1.7" />
-    <link rel="stylesheet" href="./app-dark.css?v=1.1.7" />
+    <link rel="stylesheet" href="./styles.css?v=1.1.8" />
+    <link rel="stylesheet" href="./app-dark.css?v=1.1.8" />
     <script>
       window.addEventListener("error", function (event) {
         var box = document.getElementById("bootError");
@@ -62,7 +62,6 @@
             </p>
             <div class="hero-actions" data-reveal style="--i: 3">
               <a class="primary-button" href="#workspace">开始创作</a>
-              <a class="secondary-button" href="./admin.html">进入后台</a>
             </div>
           </div>
           <div class="hero-stats" aria-label="创作概览" data-reveal style="--i: 4">
@@ -119,8 +118,8 @@
                 <p class="eyebrow">Prompt composer</p>
                 <h2 id="editorTitle">选择一个模板</h2>
               </div>
-              <button class="icon-button" id="favoriteButton" type="button" aria-label="收藏当前模板">
-                <span aria-hidden="true">♡</span>
+              <button class="icon-button favorite-button" id="favoriteButton" type="button" aria-label="收藏当前模板">
+                <span class="heart" aria-hidden="true">♡</span>
               </button>
             </div>
 
@@ -170,6 +169,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="./script.js?v=1.1.7"></script>
+    <script src="./script.js?v=1.1.8"></script>
   </body>
 </html>
