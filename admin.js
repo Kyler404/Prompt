@@ -144,6 +144,39 @@ const restoreDefaultsButton = document.querySelector("#restoreDefaultsButton");
 const saveStatus = document.querySelector("#saveStatus");
 const toastAdmin = document.querySelector("#toast");
 
+// —— 例图灯箱预览：结构与样式复用前台那一套（#imageLightbox + styles.css） ——
+// 用 IIFE 收纳，不往全局作用域加新名字：admin 页同时加载 script.js，
+// 对方在非 admin 分支里有一套同名灯箱逻辑，顶层函数重名会直接撞车。
+const adminLightbox = (function () {
+  const root = document.querySelector("#imageLightbox");
+  const image = document.querySelector("#lightboxImage");
+  const backdrop = document.querySelector("#lightboxBackdrop");
+  const closeButton = document.querySelector("#lightboxClose");
+
+  function close() {
+    if (!root) return;
+    root.hidden = true;
+    image.removeAttribute("src");
+    document.body.classList.remove("lightbox-open");
+  }
+
+  function open(src) {
+    if (!root || !src) return;
+    image.src = src;
+    root.hidden = false;
+    document.body.classList.add("lightbox-open");
+    closeButton?.focus();
+  }
+
+  backdrop?.addEventListener("click", close);
+  closeButton?.addEventListener("click", close);
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !root.hidden) close();
+  });
+
+  return { open };
+})();
+
 async function loadAdminTemplates() {
   try {
     localStorage.removeItem(LEGACY_STORAGE_KEY);
@@ -356,9 +389,14 @@ function createExampleRow(example = {}) {
   row.className = "example-row";
   row.dataset.src = example.src || "";
   row.innerHTML = `
-    <img class="example-thumb" src="${escapeAttribute(example.src || "")}" alt="例图预览" loading="lazy" />
+    <button class="example-preview" type="button" aria-label="放大预览例图">
+      <img class="example-thumb" src="${escapeAttribute(example.src || "")}" alt="例图预览" loading="lazy" />
+    </button>
     <button class="example-remove" type="button" aria-label="删除例图">×</button>
   `;
+  row.querySelector(".example-preview").addEventListener("click", () => {
+    adminLightbox.open(row.dataset.src);
+  });
   row.querySelector(".example-remove").addEventListener("click", () => {
     row.remove();
     syncFormToState();

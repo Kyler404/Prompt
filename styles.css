@@ -1000,6 +1000,12 @@ pre {
   color: var(--muted);
 }
 
+/* 这里的 display:grid 是作者样式，优先级高于浏览器对 [hidden] 的默认 display:none，
+   不补这条的话 JS 里的 emptyState.hidden = true 不生效，加载完的提示框会一直挂着 */
+.empty-state[hidden] {
+  display: none;
+}
+
 .empty-state strong {
   color: var(--text);
   font-size: 20px;
@@ -1258,6 +1264,12 @@ pre {
   margin-top: 18px;
 }
 
+/* 同 .empty-state[hidden]：没有选中模板时 JS 会设 adminForm.hidden = true，
+   不补这条 display:grid 会压过 hidden，空表单仍然显示 */
+.admin-form[hidden] {
+  display: none;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1300,11 +1312,31 @@ pre {
   background: var(--surface-soft);
 }
 
+/* 缩略图包一层按钮，点击打开放大灯箱（与前台同一套 #imageLightbox） */
+.example-preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
 .example-thumb {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition:
+    transform 200ms var(--ease-out-quart),
+    filter 200ms var(--ease-out-quart);
+}
+
+.example-preview:hover .example-thumb,
+.example-preview:focus-visible .example-thumb {
+  transform: scale(1.05);
+  filter: brightness(1.06);
 }
 
 .example-remove {
@@ -1355,11 +1387,11 @@ pre {
   background: var(--surface-soft);
 }
 
-/* —— 热度星星：SVG 星形，尖角靠 stroke-linejoin="round" 磨圆 —— */
+/* —— 热度星星：SVG 星形，路径本身带圆角切角，再靠 stroke-linejoin 补一层柔化 —— */
 .star-icon {
   display: block;
-  width: 15px;
-  height: 15px;
+  width: 17px;
+  height: 17px;
   flex: 0 0 auto;
   color: var(--muted-weak);
 }
@@ -1383,8 +1415,8 @@ pre {
 }
 
 .star-picker .star .star-icon {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
 }
 
 .star-picker .star:hover {
@@ -1396,19 +1428,23 @@ pre {
   color: var(--star);
 }
 
-/* 点击弹跳：带一点旋转，比单纯放大更有手感 */
+/* 点击弹跳：带一点旋转和发光，比单纯放大更有手感 */
 @keyframes star-pop {
   0% {
     transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0));
   }
   40% {
-    transform: scale(1.45) rotate(-14deg);
+    transform: scale(1.5) rotate(-14deg);
+    filter: drop-shadow(0 0 7px color-mix(in srgb, var(--star) 75%, transparent));
   }
   70% {
     transform: scale(0.9) rotate(6deg);
+    filter: drop-shadow(0 0 2px color-mix(in srgb, var(--star) 40%, transparent));
   }
   100% {
     transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0));
   }
 }
 
