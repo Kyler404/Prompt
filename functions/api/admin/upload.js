@@ -10,6 +10,12 @@ const PUBLIC_BASE = "https://img.guoke404.xin";
 // （PNG 原图动辄 1-3MB，转 WebP 后通常只剩 5%）
 const MAX_SIZE = 1024 * 1024; // 1MB
 
+// 缓存策略：必须每次回源校验。
+// 覆盖写同名对象时 Cloudflare 边缘缓存**不会自动失效**，会一直吐旧图 ——
+// 表现为「换了图但页面还是原来那张」。设成 max-age=0 + must-revalidate 后，
+// 每次请求都会拿 ETag 回源校验：没变就 304（几乎不耗流量），变了立刻更新。
+const CACHE_CONTROL = "public, max-age=0, must-revalidate";
+
 // 命名规则：t{模板短码}-{例图序号}.{扩展名}
 //   模板短码 slug：由模板 id 派生的固定短码（见前端 templateSlug），与模板在列表中的
 //                  位置无关 —— 增删/排序模板都不会让它变化，因此不会撞上别的模板的文件。
@@ -69,10 +75,25 @@ export async function onRequestPost(context) {
     );
 
     await env.BUCKET.put(key, file.stream(), {
-      httpMetadata: { contentType: file.type || contentTypeOf(ext) },
+      httpMetadata: {
+        contentType: file.type || contentTypeOf(ext),
+        cacheControl: CACHE_CONTROL,
+      },
     });
 
-    return json({ url: `${PUBLIC_BASE}/${key}` });
+    const url = `${PUBLIC_BASE}/${key}`;
+
+    // 尽力清一次边缘缓存（覆盖写的旧副本）。
+    // 注意：caches.default 只能清当前这个 PoP，其它节点靠上面的 must-revalidate 兜底。
+    try {
+      if (typeof caches !== "undefined") {
+        await caches.default.delete(new Request(url));
+      }
+    } catch {
+      /* 清不掉也不影响：对象已设 must-revalidate */
+    }
+
+    return json({ url });
   } catch (err) {
     return json({ error: String((err && err.message) || err) }, { status: 500 });
   }
