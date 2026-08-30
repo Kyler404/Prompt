@@ -8,11 +8,28 @@ function clampStars(value) {
   return Math.min(MAX_STARS, Math.max(1, n));
 }
 
+// 圆润五角星 SVG。
+// 之前用 Unicode 的 ★ / ☆，但字符字形是固定的、尖角很硬，没法调圆角；
+// 换成 SVG 后靠 stroke + linejoin="round" 把尖角磨圆，大小也能精确控制。
+// 只暴露这一个函数名：admin.js 与 script.js 共享全局作用域，少声明一个是一个。
+function starIcon(filled) {
+  const path =
+    "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z";
+  return (
+    `<svg class="star-icon${filled ? " is-on" : ""}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">` +
+    `<path d="${path}" fill="${filled ? "currentColor" : "none"}" stroke="currentColor" ` +
+    `stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />` +
+    `</svg>`
+  );
+}
+
 function starsMarkup(value) {
   const count = clampStars(value);
-  const on = "★".repeat(count);
-  const off = "☆".repeat(MAX_STARS - count);
-  return `<span class="stars" aria-label="热度 ${count} 星（满分 ${MAX_STARS} 星）"><span class="star is-on">${on}</span><span class="star">${off}</span></span>`;
+  let html = "";
+  for (let index = 1; index <= MAX_STARS; index += 1) {
+    html += starIcon(index <= count);
+  }
+  return `<span class="stars" aria-label="热度 ${count} 星（满分 ${MAX_STARS} 星）">${html}</span>`;
 }
 
 // 模板数据源：数据全部来自云端 /api/templates，代码里不再内置任何种子数据。

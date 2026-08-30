@@ -56,7 +56,8 @@ function clampStarValue(value) {
   return Math.min(STAR_MAX, Math.max(1, n));
 }
 
-function renderStarPicker(value) {
+// burstIndex：被点击的那颗星，重建后给它播一次弹跳动画
+function renderStarPicker(value, burstIndex = 0) {
   if (!popularityStars) return;
   const current = clampStarValue(value);
   popularityStars.innerHTML = "";
@@ -64,17 +65,23 @@ function renderStarPicker(value) {
     const star = document.createElement("button");
     star.type = "button";
     star.className = index <= current ? "star is-on" : "star";
-    star.textContent = index <= current ? "★" : "☆";
+    // 复用 script.js 里的 starIcon（圆润 SVG 星形）
+    star.innerHTML = starIcon(index <= current);
     star.dataset.value = String(index);
     star.setAttribute("aria-label", `${index} 星`);
     star.setAttribute("aria-pressed", index <= current ? "true" : "false");
     star.addEventListener("click", () => {
       popularityInput.value = String(index);
-      renderStarPicker(index);
+      renderStarPicker(index, index);
       syncFormToState();
       markDirty(adminState.selectedId);
     });
     popularityStars.appendChild(star);
+
+    // 新元素下一帧再加 class，确保动画从头播放
+    if (index === burstIndex) {
+      requestAnimationFrame(() => star.classList.add("is-animating"));
+    }
   }
 }
 

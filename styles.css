@@ -1355,21 +1355,40 @@ pre {
   background: var(--surface-soft);
 }
 
+/* —— 热度星星：SVG 星形，尖角靠 stroke-linejoin="round" 磨圆 —— */
+.star-icon {
+  display: block;
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  color: var(--muted-weak);
+}
+
+.star-icon.is-on {
+  color: var(--star);
+}
+
 .star-picker .star {
-  padding: 6px 3px;
-  font-size: 18px;
-  line-height: 1;
+  display: grid;
+  place-items: center;
+  padding: 7px 3px;
   color: var(--muted-weak);
   background: none;
   border: 0;
-  border-radius: 4px;
+  border-radius: 8px;
+  cursor: pointer;
   transition:
-    transform 140ms ease,
-    color 140ms ease;
+    transform 160ms var(--ease-out-quart),
+    color 160ms var(--ease-out-quart);
+}
+
+.star-picker .star .star-icon {
+  width: 22px;
+  height: 22px;
 }
 
 .star-picker .star:hover {
-  transform: scale(1.2);
+  transform: scale(1.18);
   color: var(--star);
 }
 
@@ -1377,22 +1396,37 @@ pre {
   color: var(--star);
 }
 
+/* 点击弹跳：带一点旋转，比单纯放大更有手感 */
+@keyframes star-pop {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  40% {
+    transform: scale(1.45) rotate(-14deg);
+  }
+  70% {
+    transform: scale(0.9) rotate(6deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.star-picker .star.is-animating {
+  animation: star-pop 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 .stars {
   display: inline-flex;
   align-items: center;
-  gap: 0;
+  gap: 1px;
   white-space: nowrap;
 }
 
-.stars .star {
-  font-size: 12px;
-  line-height: 1;
-  letter-spacing: 0.5px;
-  color: var(--muted-weak);
-}
-
-.stars .star.is-on {
-  color: var(--star);
+@media (prefers-reduced-motion: reduce) {
+  .star-picker .star.is-animating {
+    animation: none;
+  }
 }
 
 .field-hint {
