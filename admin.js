@@ -475,13 +475,17 @@ function addVariable() {
 }
 
 // —— 上传例图到 R2 ——
-// 命名规则（服务端统一生成，前端只传短码 + 序号）：
-//   t{模板短码}-{例图序号}.{扩展名}
+// 命名规则（服务端统一生成，前端只传短码 + 序号，唯一令牌由服务端加）：
+//   t{模板短码}-{例图序号}-{唯一令牌}.{扩展名}
 //   模板短码 = 由模板 id 派生的固定短码，与模板在列表中的位置无关。
 //              早期用「列表位置」当序号，新增模板插到最前会让所有位置下移，
 //              新模板就会复用到别的模板正在用的文件名，把对方的图直接覆盖掉。
 //   例图序号 = 该模板下第几张例图（1 起）
-// 例：某模板短码 4578a 的第 2 张 → t4578a-2.webp
+//   唯一令牌 = 服务端生成，保证每次上传都是新地址、永不覆盖同名对象。
+// 例：短码 m4578a 的第 2 张 → tm4578a-2-m9x2k1p0z3.webp
+//
+// 因为一个地址的内容永不变，浏览器和 CDN 都能强缓存（immutable），
+// 不会再出现「换了图还看到旧的」。替换图片 = 新增文件，旧文件由保存时的差集清理回收。
 const uploadInput = document.createElement("input");
 uploadInput.type = "file";
 uploadInput.accept = "image/*";
@@ -505,35 +509,11 @@ uploadInput?.addEventListener("change", async () => {
   }
 
   const slug = templateSlug(template);
-  // 已被别的模板占用的文件名，绝不能覆盖过去
-  const usedByOthers = new Set(
-    adminState.templates
-      .filter((item) => item.id !== template.id)
-      .flatMap((item) => (Array.isArray(item.examples) ? item.examples : []))
-      .map((example) => String(example.src || "")),
-  );
-  const extOf = (name) => {
-    const lower = String(name || "").toLowerCase();
-    return lower.includes(".") ? lower.split(".").pop() : "webp";
-  };
-
   let exampleIndex = exampleRows.querySelectorAll(".example-row").length;
   let uploaded = 0;
 
   for (const file of files) {
-    const ext = extOf(file.name);
-    // 跳过会撞车的序号：既不能覆盖别人正在用的文件，也不能覆盖本轮刚传的
-    let guard = 0;
-    let candidate = exampleIndex + 1;
-    while (
-      usedByOthers.has(`${IMAGE_BASE}t${slug}-${candidate}.${ext}`) &&
-      guard < 999
-    ) {
-      candidate += 1;
-      guard += 1;
-    }
-    exampleIndex = candidate;
-
+    exampleIndex += 1;
     showToast(`上传中…（第 ${exampleIndex} 张）`);
     try {
       const fd = new FormData();
