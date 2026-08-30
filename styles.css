@@ -110,9 +110,11 @@ button {
 }
 
 .app-shell {
+  /* 顶栏遮罩要横向盖满整个 shell（含左右留白），所以把留白抽成变量 */
+  --shell-pad-x: 32px;
   width: min(1400px, 100%);
   margin: 0 auto;
-  padding: 28px 32px;
+  padding: 28px var(--shell-pad-x);
 }
 
 .site-header {
@@ -120,7 +122,26 @@ button {
   top: 0;
   z-index: 20;
   padding: 12px 0 28px;
-  backdrop-filter: blur(18px);
+  /* 独立堆叠上下文，让伪元素遮罩待在内容下方 */
+  isolation: isolate;
+}
+
+/* 顶栏背后的渐隐遮罩：内容滚到顶栏下方自然淡出。
+   之前这里用的是 backdrop-filter: blur(18px) 且没有背景色，
+   会形成一个比 topbar 大一圈的「直角毛玻璃矩形」，边缘很突兀。 */
+.site-header::before {
+  position: absolute;
+  inset: 0 calc(var(--shell-pad-x) * -1);
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    var(--bg) 0%,
+    color-mix(in srgb, var(--bg) 94%, transparent) 58%,
+    color-mix(in srgb, var(--bg) 70%, transparent) 82%,
+    transparent 100%
+  );
 }
 
 .topbar {
@@ -131,7 +152,7 @@ button {
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  background: var(--surface-strong);
   box-shadow: 0 14px 40px rgba(15, 23, 42, 0.04);
 }
 
@@ -430,9 +451,9 @@ button {
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  /* Billow 是「实色卡片 + 细边框 + 柔和阴影」，不用毛玻璃 */
+  background: var(--surface-strong);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(18px);
 }
 
 .sidebar,
@@ -1353,6 +1374,7 @@ pre {
 
 @media (max-width: 860px) {
   .app-shell {
+    --shell-pad-x: 18px;
     padding: 18px;
   }
 
