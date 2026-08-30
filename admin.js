@@ -508,6 +508,77 @@ function addVariable() {
 //
 // 因为一个地址的内容永不变，浏览器和 CDN 都能强缓存（immutable），
 // 不会再出现「换了图还看到旧的」。替换图片 = 新增文件，旧文件由保存时的差集清理回收。
+// —— 浏览器本地把图片转成 WebP ——
+// 上传接口有 1MB 体积上限，而 PNG 原图动辄 1-3MB，直接传会被拒，
+// 以前得先用 ffmpeg 手工压一遍。现在这一步在浏览器本地完成，省事。
+//
+// 用 IIFE 包起来只暴露一个函数：admin.js 和 script.js 共享全局作用域，
+// 顶层多声明一个 const 就可能和对方撞名 → SyntaxError 白屏（踩过）。
+const convertImageToWebp = (function () {
+  // 与 functions/api/admin/upload.js 的 MAX_SIZE 保持一致
+  const MAX_SIZE = 1024 * 1024;
+  // 超过这个边长就等比缩小，免得大图把 canvas 撑爆
+  const MAX_EDGE = 2048;
+  // 质量阶梯：先保画质，压不到 1MB 以内再逐级降
+  const QUALITY_STEPS = [0.85, 0.75, 0.6, 0.5];
+
+  function loadImageElement(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("图片解码失败，可能不是有效图片"));
+      };
+      img.src = url;
+    });
+  }
+
+  function canvasToBlob(canvas, quality) {
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), "image/webp", quality);
+    });
+  }
+
+  return async function convert(file) {
+    // GIF 转 canvas 会丢动画、SVG 会丢矢量，这两类原样上传
+    if (file.type === "image/gif" || file.type === "image/svg+xml") return file;
+    // 已经是 webp 且体积达标，不再二次编码（重复压缩只会掉画质）
+    if (file.type === "image/webp" && file.size <= MAX_SIZE) return file;
+
+    const img = await loadImageElement(file);
+    const scale = Math.min(1, MAX_EDGE / Math.max(img.width, img.height));
+    const width = Math.max(1, Math.round(img.width * scale));
+    const height = Math.max(1, Math.round(img.height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, width, height);
+
+    let result = null;
+    for (const quality of QUALITY_STEPS) {
+      const blob = await canvasToBlob(canvas, quality);
+      if (!blob) continue; // 浏览器不支持 webp 编码
+      result = blob;
+      if (blob.size <= MAX_SIZE) break;
+    }
+
+    // 转不出来（老浏览器）就原样上传，不阻塞流程
+    if (!result) return file;
+
+    // 扩展名必须是 .webp：服务端从 file.name 取后缀，
+    // 后缀决定了 R2 对象名和 contentType
+    const name = file.name.replace(/\.[^.]+$/, "") + ".webp";
+    return new File([result], name, { type: "image/webp" });
+  };
+})();
+
 const uploadInput = document.createElement("input");
 uploadInput.type = "file";
 uploadInput.accept = "image/*";
@@ -533,13 +604,18 @@ uploadInput?.addEventListener("change", async () => {
   const slug = templateSlug(template);
   let exampleIndex = exampleRows.querySelectorAll(".example-row").length;
   let uploaded = 0;
+  let savedBytes = 0;
 
   for (const file of files) {
     exampleIndex += 1;
-    showToast(`上传中…（第 ${exampleIndex} 张）`);
+    showToast(`转换并上传中…（第 ${exampleIndex} 张）`);
     try {
+      // 本地转 WebP（PNG/JPEG 等），转失败就回退原图，不中断整批上传
+      const converted = await convertImageToWebp(file).catch(() => file);
+      savedBytes += Math.max(0, file.size - converted.size);
+
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", converted);
       fd.append("slug", slug);
       fd.append("exampleIndex", String(exampleIndex));
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
@@ -564,7 +640,8 @@ uploadInput?.addEventListener("change", async () => {
   }
 
   if (uploaded) {
-    showToast(`已上传 ${uploaded} 张例图，记得保存。`);
+    const savedTip = savedBytes > 1024 ? `，压缩掉 ${(savedBytes / 1024).toFixed(0)}KB` : "";
+    showToast(`已上传 ${uploaded} 张例图${savedTip}，记得保存。`);
   }
 });
 
