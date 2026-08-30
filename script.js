@@ -1,133 +1,3 @@
-const defaultTemplates = [
-  {
-    "id": "template-mq3l8bmm-4578a",
-    "title": "半条命画风",
-    "category": "生图",
-    "description": "",
-    "popularity": 4,
-    "date": "2026-06-07",
-    "variables": {},
-    "examples": [
-      {
-        "src": "https://img.guoke404.xin/5-1.webp",
-        "title": "",
-        "description": ""
-      },
-      {
-        "src": "https://img.guoke404.xin/5-2.webp",
-        "title": "",
-        "description": ""
-      }
-    ],
-    "prompt": "严格基于参考图进行风格转换，100%锁定原图构图、人物与场景，禁止任何重绘与元素篡改。Garry's Mod (GMOD) Source引擎渲染，半条命2模组场景，2000年代千禧年早期3D游戏画质。低多边形块状建模，低分辨率粗糙贴图，老旧游戏颗粒感，复古忧郁氛围。模拟早期引擎生硬光影，阴天漫射无硬阴影，整体昏暗冷灰低饱和色调，阴沉多云天空。中近景人物取景，保持原图视角不变。"
-  },
-  {
-    "id": "template-mq38rwaq-kc924",
-    "title": "人物拖影",
-    "category": "生图",
-    "description": "电影级视觉设计的生成。",
-    "popularity": 4,
-    "date": "2026-06-07",
-    "variables": {
-      "图片左下角文字": "lam the protagonist of my life script"
-    },
-    "examples": [
-      {
-        "src": "https://img.guoke404.xin/4.webp",
-        "title": "",
-        "description": ""
-      }
-    ],
-    "prompt": "参照我的图，帮我把这张照片处理出动感横向拖影效果，拖影范围不要太大，拖影颜色和人物本身颜色严格统一。\n采用伦勃朗光影布光，仅一束强光打亮半张脸，面部其余区域处于深邃阴影中；整体暗调风格，光影对比强烈。\n人物处于右侧，身后左侧添加横向动态模糊拖影，营造速度感和压迫感，整体风格硬朗帅气，营造疾速行进的速度感。\n纯黑色背景，色调保持低对比，高质感的电影感。8K分辨率，细节丰富。\n左下角排版白色简约字体文字：{{图片左下角文字}}。\n画幅比例3:2，写实原生摄影风格。"
-  },
-  {
-    "id": "template-mpzbh0et-7r2jz",
-    "title": "物品描边",
-    "category": "生图",
-    "description": "把日常拍摄的照片变得有趣。",
-    "popularity": 4,
-    "date": "2026-06-04",
-    "variables": {},
-    "examples": [
-      {
-        "src": "https://img.guoke404.xin/1.webp",
-        "title": "",
-        "description": ""
-      }
-    ],
-    "prompt": "请观察照片中的元素，并为每个物件加上有意义的手绘风注解。请填写照片中的物品（例：披萨、汽水）\n\n描写规则：\n1.使用像白色笔画的细线手绘线条\n2.一笔画风格、随性、略带不均匀感\n3.沿着物件外围加上描边轮廓\n4.用箭头或虛线做出视线引导\n文字规则：\n1.手写风格字体（日系可爱感）\n2.句子简短、像自言自语的小碎念\n3.语气偏日记感、带一点情绪\n注解生成规则：\n1.饮料 一> 味道、温度、心情 （例： 清爽、微甜、 刚刚好）\n2.食物 一> 口感、好吃程度 （例： 松软、超好吃）\n3.空间 一> 氛围（例：很放松、喜欢这种感觉）\n4.整体 一> 一句总结（例：今天有点幸福~）\n装饰：\n1.适度加入热气、闪光、爱心、星星、小表情等元素。\n2.不要过度装饰，保留空白空间。"
-  },
-  {
-    "id": "image-cinematic-product",
-    "title": "发型分析信息图",
-    "category": "生图",
-    "description": "使用一张或多张自拍照片制作一份发型分析图表。",
-    "popularity": 4,
-    "date": "2026-06-01",
-    "variables": {},
-    "examples": [
-      {
-        "src": "https://img.guoke404.xin/3.webp",
-        "title": "",
-        "description": ""
-      }
-    ],
-    "prompt": "create a hair analysis graphic using this portrait.\nAnalyze and present:\nFace shape (e.g., oval, round, square, heart)\nHair texture (straight, wavy, curly)\nHair density (thin, medium, thick)\nHairline and forehead proportion\nOverall vibe and style suitability\nShow visual comparisons of:\nRecommended hairstyles vs Not recommended styles\nShort / Medium / Long length options\nDifferent fringe styles (no fringe, curtain bangs, side part, etc.)\nInclude sections:\nBEST HAIRSTYLES\nNOT RECOMMENDED\nHAIR LENGTH\nPARTING & FRINGE\nHAIR COLOR\nHair color analysis:\nWarm / Cool / Neutral tones\nShow color swatches and real examples on the portrait\nDesign style:\nClean, modern, visual-first\nSide-by-side comparisons using the same portrait\nMinimal text, short labels only (no paragraphs)\nLanguage:\nInclude both English and Chinese labels for all sections and elements\nOptional:\nAdd a final summary section: \"Overall Look / Appearance\"\nVertical 3:2"
-  },
-  {
-    "id": "image-editorial-portrait",
-    "title": "企业高管证件照片",
-    "category": "生图",
-    "description": "生成一张商务高管的证件照/形象照。",
-    "popularity": 4,
-    "date": "2026-05-29",
-    "variables": {
-      "姓名": "Elon Musk",
-      "学历": "University of Pennsylvania",
-      "专业": "Engineer"
-    },
-    "examples": [
-      {
-        "src": "https://img.guoke404.xin/0.webp",
-        "title": "",
-        "description": ""
-      }
-    ],
-    "prompt": "Generate a business executive headshot with identical layout, style, and typography to the reference image (Image 1):\n1. Subject: Based on the provided photo of the user, create a professional portrait of an East Asian male. Refine facial contours, smooth skin texture, and style a business hairstyle that complements the subject’s face shape. He is wearing a dark navy blue suit, a crisp white dress shirt, and a deep purple tie, set against a plain pure white background.\n2. Bottom Text Layout (1:1 replication of the reference format): • A solid white banner area at the bottom of the image, with all text contained within its boundaries. • Line 1: Left-aligned blue text reading \"{{姓名}}\", matching the font, font size, and color of the word \"Customer\" in the reference image exactly. • Line 2: Left-aligned black text directly below Line 1, reading \"{{学历}}\", matching the font, font size, and color of the same text in the reference image exactly. • Line 3: Left-aligned black text directly below Line 2, reading \"{{专业}}\", matching the font, font size, and color of the phrase \"Software Engineering\" in the reference image exactly.\n3. Overall Style: Maintain the clean, professional corporate executive portrait aesthetic from the reference image, with even, soft lighting and high-resolution, sharp quality.\n4. Text must follow the reference's alignment, spacing, and hierarchy exactly—no misalignment, no overflow, no changes to font proportions."
-  },
-  {
-    "id": "writing-soft-launch",
-    "title": "品牌发布文案",
-    "category": "文笔",
-    "description": "把产品或服务写成有画面、有节奏、适合发布的品牌文案。",
-    "popularity": 4,
-    "date": "2026-05-25",
-    "variables": {
-      "品牌": "一家独立香氛工作室",
-      "受众": "审美成熟的年轻消费者",
-      "语气": "克制、温柔、富有画面感",
-      "渠道": "小红书首发"
-    },
-    "examples": [],
-    "prompt": "请为「{{品牌}}」写一组适合「{{渠道}}」发布的品牌文案，面向「{{受众}}」。语气保持「{{语气}}」，包含标题、短引言、三段正文和一句收束语。"
-  },
-  {
-    "id": "writing-polish-prose",
-    "title": "段落润色成稿",
-    "category": "文笔",
-    "description": "把粗糙草稿改成更自然、更有节奏的中文表达。",
-    "popularity": 4,
-    "date": "2026-05-21",
-    "variables": {
-      "草稿": "在这里粘贴需要润色的文字",
-      "风格": "自然、细腻、不堆砌",
-      "保留": "原意和关键信息"
-    },
-    "examples": [],
-    "prompt": "请润色以下草稿，风格为「{{风格}}」，需要保留「{{保留}}」。输出润色后的正文，并简短说明三处关键修改。\n\n草稿：\n{{草稿}}"
-  }
-];
-
 // 热度：8 星制（1-8），缺省 4 星
 const MAX_STARS = 8;
 const DEFAULT_STARS = 4;
@@ -145,9 +15,48 @@ function starsMarkup(value) {
   return `<span class="stars" aria-label="热度 ${count} 星（满分 ${MAX_STARS} 星）"><span class="star is-on">${on}</span><span class="star">${off}</span></span>`;
 }
 
-// 模板数据源：先用内置兜底，前台 fetch 到云端数据后再覆盖（见文件末尾的加载逻辑）
-let templates = defaultTemplates;
-window.PROMPT_DEFAULT_TEMPLATES = defaultTemplates;
+// 模板数据源：数据全部来自云端 /api/templates，代码里不再内置任何种子数据。
+// 这样本地直接打开静态页时不会看到假数据，只会显示「加载中 / 加载失败」状态。
+let templates = [];
+let remoteError = "";
+let isLoadingTemplates = true;
+
+// —— 深色/浅色主题切换 ——
+(function initTheme() {
+  const STORAGE_KEY = "promptStudioTheme";
+  const root = document.documentElement;
+  const saved = localStorage.getItem(STORAGE_KEY);
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const isDark = saved ? saved === "dark" : prefersDark;
+
+  if (isDark) {
+    root.setAttribute("data-theme", "dark");
+  } else {
+    root.removeAttribute("data-theme");
+  }
+
+  const toggleButton = document.querySelector("#themeToggle");
+  const toggleIcon = toggleButton?.querySelector("span");
+
+  function updateIcon() {
+    if (!toggleIcon) return;
+    toggleIcon.textContent = root.getAttribute("data-theme") === "dark" ? "☾" : "☀";
+  }
+
+  function toggleTheme() {
+    if (root.getAttribute("data-theme") === "dark") {
+      root.removeAttribute("data-theme");
+      localStorage.setItem(STORAGE_KEY, "light");
+    } else {
+      root.setAttribute("data-theme", "dark");
+      localStorage.setItem(STORAGE_KEY, "dark");
+    }
+    updateIcon();
+  }
+
+  updateIcon();
+  toggleButton?.addEventListener("click", toggleTheme);
+})();
 
 if (document.body.dataset.page !== "admin") {
   const state = {
@@ -260,10 +169,30 @@ if (document.body.dataset.page !== "admin") {
     });
   }
 
+  // 空状态现在要区分四种情况：加载中 / 接口失败 / 云端确实为空 / 搜索无结果
+  function emptyStateMessage() {
+    if (isLoadingTemplates) {
+      return "<strong>正在从云端加载模板…</strong><span>首次打开需要一点时间。</span>";
+    }
+    if (remoteError) {
+      return `<strong>云端数据加载失败</strong><span>${escapeHtml(remoteError)}。请确认已部署 Pages Functions，或稍后重试。</span>`;
+    }
+    if (templates.length === 0) {
+      return "<strong>云端还没有任何模板</strong><span>去后台新增第一个模板吧。</span>";
+    }
+    return "<strong>没有找到匹配模板</strong><span>换个关键词，或者回到生图分类再试试。</span>";
+  }
+
   function renderTemplates() {
     const visibleTemplates = getVisibleTemplates();
     templateGrid.innerHTML = "";
-    emptyState.hidden = visibleTemplates.length > 0;
+
+    if (visibleTemplates.length > 0) {
+      emptyState.hidden = true;
+    } else {
+      emptyState.hidden = false;
+      emptyState.innerHTML = emptyStateMessage();
+    }
 
     visibleTemplates.forEach((template) => {
       const button = document.createElement("button");
@@ -529,7 +458,7 @@ if (document.body.dataset.page !== "admin") {
     render();
   });
 
-  // 首屏用内置兜底渲染，再异步拉云端数据覆盖（失败则保持兜底）
+  // 首屏先渲染空/加载态，再由云端数据覆盖
   render();
   loadRemoteTemplates();
 
@@ -538,14 +467,18 @@ if (document.body.dataset.page !== "admin") {
       const res = await fetch("/api/templates", {
         headers: { Accept: "application/json" },
       });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        templates = data;
-        render();
+      if (!res.ok) {
+        remoteError = `接口返回 HTTP ${res.status}`;
+      } else {
+        const data = await res.json();
+        templates = Array.isArray(data) ? data : [];
       }
-    } catch {
-      /* 接口不可用（本地/未部署）时保持内置兜底 */
+    } catch (error) {
+      // 本地静态打开、或未部署 Pages Functions 时走这里：明确报错，不再渲染假数据
+      remoteError = "无法连接云端接口 /api/templates";
+    } finally {
+      isLoadingTemplates = false;
+      render();
     }
   }
 }

@@ -8,8 +8,8 @@
     <!-- 静态资源带版本号：Cloudflare Pages 给 JS/CSS 的缓存是 max-age=14400（4 小时），
          而 HTML 是 max-age=0 永远最新。改完 JS 若不 ?v= 加一，浏览器会拿「新 HTML + 旧 JS」，
          旧脚本找不到已删除的元素就会整页崩溃（表现为后台空白）。改 JS/CSS 记得同步 +1。 -->
-    <link rel="stylesheet" href="./styles.css?v=1.1.2" />
-    <link rel="stylesheet" href="./admin-dark.css?v=1.1.2" />
+    <link rel="stylesheet" href="./styles.css?v=1.1.5" />
+    <link rel="stylesheet" href="./admin-dark.css?v=1.1.5" />
     <script>
       // 早期错误兜底：脚本崩溃时给出可操作的提示，而不是白屏
       window.addEventListener("error", function (event) {
@@ -37,19 +37,23 @@
 
           <div class="top-actions">
             <a class="admin-link" href="./index.html">查看前台</a>
+            <button class="icon-button" id="themeToggle" type="button" aria-label="切换深色/浅色主题">
+              <span aria-hidden="true">☀</span>
+            </button>
           </div>
         </nav>
       </header>
 
       <main>
         <section class="admin-hero">
-          <div>
+          <div class="hero-blob hero-blob--top" aria-hidden="true"></div>
+          <div class="admin-hero-copy">
             <p class="eyebrow">Cloud admin</p>
             <h1>管理生图与文笔模板</h1>
-            <p>维护两类创作模板、关键词变量与生图例图。改动会保存到云端，前台实时生效。</p>
-          </div>
-          <div class="admin-actions">
-            <button class="primary-button" id="saveAllButton" type="button">保存到云端</button>
+            <p class="admin-hero-sub">维护两类创作模板、关键词变量与生图例图。改动会保存到云端，前台实时生效。</p>
+            <div class="admin-actions">
+              <button class="primary-button" id="saveAllButton" type="button">保存到云端</button>
+            </div>
           </div>
         </section>
 
@@ -149,7 +153,7 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="./script.js?v=1.1.2"></script>
-    <script src="./admin.js?v=1.1.2"></script>
+    <script src="./script.js?v=1.1.5"></script>
+    <script src="./admin.js?v=1.1.5"></script>
   </body>
 </html>

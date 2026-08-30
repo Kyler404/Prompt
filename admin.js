@@ -2,7 +2,8 @@ const LEGACY_STORAGE_KEY = "promptTemplates";
 const ALLOWED_CATEGORIES = ["生图", "文笔"];
 
 const adminState = {
-  templates: structuredClone(window.PROMPT_DEFAULT_TEMPLATES || []),
+  // 数据全部来自云端 /api/templates，不再内置任何种子数据
+  templates: [],
   selectedId: "",
   query: "",
   dirty: false,
@@ -11,6 +12,8 @@ const adminState = {
   // 上次成功加载/保存时的例图 URL 集合。
   // 保存成功后与当前集合做差集，差出来的就是可以安全删除的孤儿文件。
   baselineSrcs: new Set(),
+  isLoading: true,
+  loadError: "",
 };
 
 // 只有落在我们自己的图片域名下的 URL 才允许被删除，避免误删外链图
@@ -140,31 +143,37 @@ async function loadAdminTemplates() {
   } catch {
   }
 
-  // 先用内置数据兜底
-  adminState.templates = structuredClone(window.PROMPT_DEFAULT_TEMPLATES || []);
-  adminState.selectedId = adminState.templates[0]?.id || "";
+  // 数据只从云端取，不再有内置兜底
+  adminState.templates = [];
+  adminState.selectedId = "";
+  adminState.isLoading = true;
+  adminState.loadError = "";
 
-  // 再拉云端数据（有则覆盖，空/失败则保持兜底）
   try {
     const res = await fetch("/api/templates", {
       headers: { Accept: "application/json" },
     });
-    if (res.ok) {
+    if (!res.ok) {
+      adminState.loadError = `接口返回 HTTP ${res.status}`;
+    } else {
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        adminState.templates = data;
-        adminState.selectedId = data[0]?.id || "";
-      }
+      adminState.templates = Array.isArray(data) ? data : [];
+      adminState.selectedId = adminState.templates[0]?.id || "";
     }
   } catch {
-    /* 接口不可用（本地/未部署）时保持内置兜底 */
+    // 本地静态打开、或未部署 Pages Functions：明确报错，不渲染假数据
+    adminState.loadError = "无法连接云端接口 /api/templates";
+  } finally {
+    adminState.isLoading = false;
   }
 
-  // 记录基线：这是云端（或兜底数据）当前引用的例图，之后保存时用来算孤儿
+  // 记录基线：这是云端当前引用的例图，之后保存时用来算孤儿
   adminState.baselineSrcs = collectExampleSources();
 }
 
 async function initializeAdmin() {
+  // 先渲染一次，把「加载中」状态显示出来，再拉云端数据
+  render();
   await loadAdminTemplates();
   render();
 }
@@ -212,6 +221,20 @@ function getFilteredTemplates() {
   );
 }
 
+// 空状态区分四种：加载中 / 接口失败 / 云端为空 / 搜索无结果
+function adminEmptyMessage() {
+  if (adminState.isLoading) {
+    return "<strong>正在从云端加载模板…</strong><span>首次打开需要一点时间。</span>";
+  }
+  if (adminState.loadError) {
+    return `<strong>云端数据加载失败</strong><span>${escapeAttribute(adminState.loadError)}。未部署 Pages Functions 时本地打开会看到这个提示。</span>`;
+  }
+  if (adminState.templates.length === 0) {
+    return "<strong>云端还没有任何模板</strong><span>点右上角「新增」创建第一个模板。</span>";
+  }
+  return "<strong>没有匹配模板</strong><span>换个关键词，或在右侧 Template Detail 中新增模板。</span>";
+}
+
 function renderTemplateList() {
   const filtered = getFilteredTemplates();
   adminTemplateList.innerHTML = "";
@@ -219,8 +242,7 @@ function renderTemplateList() {
   if (filtered.length === 0) {
     adminTemplateList.innerHTML = `
       <div class="admin-empty">
-        <strong>没有匹配模板</strong>
-        <span>换个关键词，或在右侧 Template Detail 中新增模板。</span>
+        ${adminEmptyMessage()}
       </div>
     `;
     return;
