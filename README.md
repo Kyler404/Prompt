@@ -38,7 +38,7 @@ Prompt Studio 是一个纯静态的提示词管理工作台。内置两类创作
 整个项目**没有构建步骤、没有框架、没有 npm 依赖** —— 改完文件直接部署，数据存在 Cloudflare D1，例图存在 Cloudflare R2。
 
 - 线上站点：<https://guoke404.xin>
-- 后台入口：<https://guoke404.xin/admin>（由 Cloudflare Access 保护）
+- 后台入口：<https://guoke404.xin/admin>（自建管理员登录，密码 + HMAC 会话 cookie）
 
 ---
 
@@ -95,9 +95,21 @@ flowchart LR
 
 ## 快速开始
 
-### 本地预览
+### 本地开发（推荐）
 
-项目是纯静态文件，起个本地服务器即可：
+用 wrangler 起本地开发服务器，会自动加载 `functions/`、`.dev.vars` 和本地 D1，功能与线上一致：
+
+```bash
+wrangler pages dev . --port 8940
+```
+
+打开 <http://127.0.0.1:8940> 查看前台，<http://127.0.0.1:8940/login> 登录后台（本地测试密码见 `.dev.vars`，默认 `local-test-123456`）。
+
+> 首次运行前需要在根目录创建 `.dev.vars`（已 gitignore），填入 `ADMIN_PASSWORD_HASH` 和 `SESSION_SECRET`，格式见 `.dev.vars.example`。
+
+### 纯静态预览（无后端）
+
+如果只想看页面效果、不需要保存数据，可以起个纯静态服务器：
 
 ```bash
 # 任选一种
@@ -105,17 +117,23 @@ python -m http.server 8080
 npx serve .
 ```
 
-打开 <http://localhost:8080> 查看前台，<http://localhost:8080/admin> 进入后台。
-
-> 本地没有 Functions 环境，`/api/*` 接口不可用。此时前台和后台都会自动使用 `script.js` 里的内置兜底数据，功能可正常体验，只是改动无法保存到云端。
+打开 <http://localhost:8080> 查看前台。此时没有 Functions 环境，`/api/*` 接口不可用，前台和后台都会自动使用 `script.js` 里的内置兜底数据，功能可正常体验，只是改动无法保存到云端。
 
 ### 部署
+
+两种方式任选：
+
+**方式一：命令行部署**
 
 ```bash
 npx wrangler pages deploy .
 ```
 
-⚠️ 必须是 `pages deploy`（Pages 模式），**不要**用 `wrangler deploy`。后者走 Workers 模式，会忽略 `functions/` 目录，还会用本地配置覆盖 Dashboard 上手动添加的绑定。
+**方式二：Git 集成自动部署（推荐）**
+
+在 Pages 项目 **Settings → Git** 连接 GitHub 仓库，之后每次 `git push` 到主分支会自动触发部署。环境变量在 Dashboard 配置，不随代码入库。
+
+⚠️ 必须是 Pages 模式（`pages deploy` 或 Git 集成），**不要**用 `wrangler deploy`（Workers 模式）。后者会忽略 `functions/` 目录，还会用本地配置覆盖 Dashboard 上手动添加的绑定。
 
 ---
 
@@ -132,6 +150,9 @@ npx wrangler pages deploy .
 ├── app-dark.css          # 前台深色霓虹覆盖层
 ├── admin-dark.css        # 后台深色霓虹覆盖层
 ├── _redirects            # /admin.html → /admin 301（直链收口到守卫）
+├── .dev.vars.example     # 本地环境变量模板（复制为 .dev.vars 使用）
+├── .gitignore            # 忽略 .dev.vars / .wrangler/ / webp-output/
+├── wrangler.toml         # 部署配置 + D1 / R2 绑定（必须入库）
 ├── functions/
 │   ├── admin.js                # GET /admin 页面守卫（验会话，失败跳登录页）
 │   └── api/
@@ -145,9 +166,10 @@ npx wrangler pages deploy .
 │           ├── templates.js    # POST 写全量
 │           ├── upload.js       # POST 上传例图到 R2
 │           └── delete.js       # POST 批量删除 R2 对象
-├── wrangler.toml         # 部署配置 + D1 / R2 绑定（必须入库）
 └── README.md
 ```
+
+> `.dev.vars`（本地测试密码哈希和会话密钥）和 `.wrangler/`（本地运行数据）已被 `.gitignore` 排除，不会入库。
 
 ---
 
@@ -296,13 +318,15 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 本地联调时把两个变量写进根目录 `.dev.vars`（已 gitignore，`wrangler pages dev` 会自动读取），格式见 `.dev.vars.example`。
 
-> **从 Cloudflare Access 迁移**：先把上面的登录功能部署并验证可用，再到 Zero Trust 删除 `/admin*` 和 `/api/admin*` 两条 Access 规则。两条规则删干净之前，登录接口会被 Access 拦截（登录页会给出提示），属预期现象。反过来顺序则有安全风险：Access 先删、登录又没配好，后台接口就裸奔了。
+> **历史：从 Cloudflare Access 迁移**。本项目后台最初由 Cloudflare Access 保护，后改为自建管理员登录。迁移顺序：先部署自建登录并验证可用 → 再到 Zero Trust 删除 `/admin*` 和 `/api/admin*` 两条 Access 规则。反过来顺序则有安全风险：Access 先删、登录又没配好，后台接口就裸奔了。当前已完成迁移，Access 规则已删除。
 
 ### 4. 部署
 
 ```bash
 npx wrangler pages deploy .
 ```
+
+或使用 Git 集成：连接 GitHub 仓库后，push 到主分支自动部署。
 
 首次部署后，在后台点一次「保存到云端」，即可把内置模板写入 D1。
 
@@ -315,6 +339,8 @@ npx wrangler pages deploy .
 - `functions/api/admin/_auth.js` 以下划线开头，不会被 Pages 当作路由，只作为共享模块被守卫和登录接口引用。
 - 加密环境变量（`ADMIN_PASSWORD_HASH` / `SESSION_SECRET`）在 Dashboard 改动后，需要**重新部署一次**才生效。
 - 两个环境变量缺任何一个，后台接口会返回 500 并附配置提示（fail-closed），页面守卫则一律跳登录页。
+- 会话 cookie 属性：`HttpOnly`（防 XSS 窃取）、`Secure`（仅 HTTPS）、`SameSite=Strict`（防 CSRF）、`Path=/`、7 天过期。
+- 密码存储使用 PBKDF2-HMAC-SHA256（25000 次迭代 + 随机盐），校验时使用常量时间比较防时序侧信道。
 - 改 `functions/` 下的代码不涉及 `?v=` 版本号（那只管浏览器缓存的静态资源）；但改了 JS/CSS 仍必须升。
 
 ### ⚠️ 改 JS / CSS 必须升版本号
