@@ -56,6 +56,7 @@ Prompt Studio 是一个纯静态的提示词管理工作台。内置两类创作
 
 **后台**
 
+- 管理员密码登录（HMAC 会话 cookie，7 天有效），同一 IP 15 分钟内失败 5 次触发限速
 - 新增 / 复制 / 删除模板，编辑标题、分类、说明、正文
 - 热度用 **8 星制** 点选，替代原来的 0-100 数字
 - 例图拖拽式上传，自动命名存到 R2
@@ -69,7 +70,8 @@ Prompt Studio 是一个纯静态的提示词管理工作台。内置两类创作
 ```mermaid
 flowchart LR
   A["index.html<br/>前台（公开）"] --> P["Cloudflare Pages"]
-  B["admin.html<br/>后台（Access 保护）"] --> P
+  L["login.html<br/>登录页（公开）"] --> P
+  B["/admin<br/>后台（会话 cookie 守卫）"] --> P
   P --> F["Pages Functions<br/>/api/*"]
   F --> D[("D1<br/>模板数据")]
   F --> R[("R2<br/>例图存储")]
@@ -82,7 +84,7 @@ flowchart LR
 | 托管 | Cloudflare Pages | 静态资源 + Functions 一体部署 |
 | 数据 | Cloudflare D1 | SQLite，单表单行存整个 JSON 数组 |
 | 图床 | Cloudflare R2 | 对象存储，绑定自定义域名公开访问 |
-| 鉴权 | Cloudflare Access | 按路径保护后台页面与写接口 |
+| 鉴权 | 自建管理员登录 | 密码登录签发 HMAC 会话 cookie，Functions 中间件守卫后台 |
 
 **读写走两条独立路径**：
 
@@ -122,17 +124,25 @@ npx wrangler pages deploy .
 ```
 .
 ├── index.html            # 前台页面
-├── script.js             # 前台逻辑 + 内置兜底种子数据
+├── script.js             # 前台逻辑
 ├── admin.html            # 后台页面
 ├── admin.js              # 后台逻辑（云端读写 / 例图上传）
+├── login.html            # 后台登录页（独立页，不加载 script.js）
 ├── styles.css            # 浅色基线样式
 ├── app-dark.css          # 前台深色霓虹覆盖层
 ├── admin-dark.css        # 后台深色霓虹覆盖层
+├── _redirects            # /admin.html → /admin 301（直链收口到守卫）
 ├── functions/
+│   ├── admin.js                # GET /admin 页面守卫（验会话，失败跳登录页）
 │   └── api/
 │       ├── templates.js        # GET  公开读全量
 │       └── admin/
-│           ├── templates.js    # POST 写全量（Access 保护）
+│           ├── _auth.js        # 共享鉴权工具（验签 / PBKDF2 / 常量时间比较）
+│           ├── _middleware.js  # /api/admin/* 统一守卫（login / logout 白名单）
+│           ├── login.js        # POST 登录（验密码 + 签发 cookie + 失败限速）
+│           ├── logout.js       # POST 退出（清 cookie）
+│           ├── session.js      # GET  登录态探测
+│           ├── templates.js    # POST 写全量
 │           ├── upload.js       # POST 上传例图到 R2
 │           └── delete.js       # POST 批量删除 R2 对象
 ├── wrangler.toml         # 部署配置 + D1 / R2 绑定（必须入库）
@@ -146,11 +156,16 @@ npx wrangler pages deploy .
 | 接口 | 方法 | 鉴权 | 说明 |
 |---|---|---|---|
 | `/api/templates` | GET | 公开匿名 | 返回全量模板数组；异常时返回 `[]`，前端回退兜底数据 |
-| `/api/admin/templates` | POST | Cloudflare Access | 接收模板数组，整份覆盖写入 D1 |
-| `/api/admin/upload` | POST | Cloudflare Access | `multipart/form-data`，字段：`file` / `slug` / `exampleIndex`；返回 `{ url }`。单图上限 1 MB |
-| `/api/admin/delete` | POST | Cloudflare Access | `{ urls: [...] }`，批量删 R2 对象。只接受本站域名下的平铺文件名，外部域名与路径穿越会被忽略 |
+| `/api/admin/login` | POST | 公开（限速） | `{ password }`，验密码后签发会话 cookie；同 IP 15 分钟内失败 5 次返回 429 |
+| `/api/admin/logout` | POST | 无需登录 | 清除会话 cookie |
+| `/api/admin/session` | GET | 会话 cookie | 登录态探测：200 = 已登录，401 = 未登录/过期 |
+| `/api/admin/templates` | POST | 会话 cookie | 接收模板数组，整份覆盖写入 D1 |
+| `/api/admin/upload` | POST | 会话 cookie | `multipart/form-data`，字段：`file` / `slug` / `exampleIndex`；返回 `{ url }`。单图上限 1 MB |
+| `/api/admin/delete` | POST | 会话 cookie | `{ urls: [...] }`，批量删 R2 对象。只接受本站域名下的平铺文件名，外部域名与路径穿越会被忽略 |
 
-> **为什么读写要拆路径？** Cloudflare Access 按路径拦截、不区分 HTTP 方法。如果读写共用一个路径，前台匿名 GET 也会被一起挡掉。
+> 守卫统一在 `functions/api/admin/_middleware.js`：除 login / logout 两个白名单外，验签不通过一律 401，请求到不了各个接口。`/admin` 页面本身由 `functions/admin.js` 守卫，未登录 302 到登录页；`admin.html` 直链被 `_redirects` 301 收口到 `/admin`，无法绕过。
+
+> **为什么读写要拆路径？** 历史原因是 Cloudflare Access 按路径拦截、不区分 HTTP 方法，读写共用路径会把前台匿名 GET 一起挡掉。现在换成自建登录，这个拆分保留下来还顺带成了权限边界：守卫中间件只挂在 `/api/admin/*` 上，公开读接口完全不受影响。
 
 ---
 
@@ -164,6 +179,8 @@ CREATE TABLE IF NOT EXISTS templates (
   data TEXT NOT NULL
 );
 ```
+
+另有一张 `login_attempts` 表（`ip`、`ts` 两列），由登录接口首次调用时自动创建，用于登录失败限速，与模板数据无关。
 
 单条模板的结构：
 
@@ -194,7 +211,7 @@ CREATE TABLE IF NOT EXISTS templates (
 
 ## 后台管理
 
-访问 `/admin`（Access 保护）后可增删改模板，点「保存到云端」写入 D1，前台下次加载即生效。
+访问 `/admin`（需管理员登录，未登录会 302 到 `/login`）后可增删改模板，点「保存到云端」写入 D1，前台下次加载即生效。
 
 ### 例图命名规则
 
@@ -253,14 +270,33 @@ npx wrangler d1 execute prompt-templates --remote \
 
 > 若改用别的域名，需要同步修改 `functions/api/admin/upload.js` 里的 `PUBLIC_BASE` 和 `admin.js` 里的 `IMAGE_BASE`。
 
-### 3. 配置 Cloudflare Access
+### 3. 配置管理员登录
 
-在 Zero Trust 里创建 Access Application，保护两条路径：
+先在本地生成密码哈希和会话密钥：
 
-- `/admin*`
-- `/api/admin*`
+```bash
+# 密码哈希（把「你的密码」换掉；迭代次数 25000 与代码校验逻辑一致，别改错）
+node -e "const c=require('crypto');const s=c.randomBytes(16);const dk=c.pbkdf2Sync('你的密码',s,25000,32,'sha256');console.log('pbkdf2-sha256$25000$'+s.toString('base64')+'$'+dk.toString('base64'))"
 
-**不要**保护 `/api/templates`，否则前台匿名访问会被挡。
+# 会话密钥
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+到 Pages 项目 **Settings → Environment variables**，给生产环境添加两条**加密**变量：
+
+| 变量 | 值 |
+|---|---|
+| `ADMIN_PASSWORD_HASH` | 上面生成的 `pbkdf2-sha256$…` 整串 |
+| `SESSION_SECRET` | 上面生成的随机串 |
+
+配置后**重新部署一次**才生效。日常维护：
+
+- **改密码** = 重设 `ADMIN_PASSWORD_HASH` 再重新部署
+- **踢掉所有已登录会话** = 换掉 `SESSION_SECRET` 再重新部署
+
+本地联调时把两个变量写进根目录 `.dev.vars`（已 gitignore，`wrangler pages dev` 会自动读取），格式见 `.dev.vars.example`。
+
+> **从 Cloudflare Access 迁移**：先把上面的登录功能部署并验证可用，再到 Zero Trust 删除 `/admin*` 和 `/api/admin*` 两条 Access 规则。两条规则删干净之前，登录接口会被 Access 拦截（登录页会给出提示），属预期现象。反过来顺序则有安全风险：Access 先删、登录又没配好，后台接口就裸奔了。
 
 ### 4. 部署
 
@@ -273,6 +309,13 @@ npx wrangler pages deploy .
 ---
 
 ## 开发注意事项
+
+### 后台鉴权相关
+
+- `functions/api/admin/_auth.js` 以下划线开头，不会被 Pages 当作路由，只作为共享模块被守卫和登录接口引用。
+- 加密环境变量（`ADMIN_PASSWORD_HASH` / `SESSION_SECRET`）在 Dashboard 改动后，需要**重新部署一次**才生效。
+- 两个环境变量缺任何一个，后台接口会返回 500 并附配置提示（fail-closed），页面守卫则一律跳登录页。
+- 改 `functions/` 下的代码不涉及 `?v=` 版本号（那只管浏览器缓存的静态资源）；但改了 JS/CSS 仍必须升。
 
 ### ⚠️ 改 JS / CSS 必须升版本号
 

@@ -1,0 +1,3 @@
+# 直链收口：admin.html 统一走 /admin（由 functions/admin.js 做登录守卫），
+# 防止有人用 /admin.html 绕过页面守卫直接打开后台壳子。
+/admin.html /admin 301

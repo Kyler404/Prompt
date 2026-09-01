@@ -5,3 +5,9 @@ webp-output/
 # 每次 Git 部署都会用该文件覆盖 Dashboard 上手动添加的配置，
 # 不入库会导致绑定丢失（表现为「绑定不了 / 绑了就掉」）。
 # 其中的 database_id 不是敏感凭据，可安全公开。
+
+# 本地开发环境变量（wrangler pages dev 读取），含密码哈希和会话密钥，绝不入库
+.dev.vars
+
+# wrangler 本地运行产物（本地 D1 模拟数据、缓存等）
+.wrangler/

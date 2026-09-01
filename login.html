@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>后台登录 | Prompt Studio</title>
+    <meta name="robots" content="noindex" />
+    <meta name="description" content="Prompt Studio 后台管理员登录。" />
+    <link rel="stylesheet" href="./styles.css?v=1.2.0" />
+  </head>
+  <body>
+    <main class="auth-shell">
+      <div class="auth-card">
+        <div class="brand">
+          <span class="brand-mark">P</span>
+          <span>
+            <strong>Prompt Studio</strong>
+            <small>后台管理登录</small>
+          </span>
+        </div>
+
+        <div class="auth-headline">
+          <h1>管理员登录</h1>
+          <p>只有持有管理员密码的人可以进入后台。</p>
+        </div>
+
+        <div class="auth-message" id="authMessage" hidden></div>
+
+        <form class="auth-form" id="loginForm">
+          <label class="field">
+            <span>管理员密码</span>
+            <input
+              id="passwordInput"
+              type="password"
+              autocomplete="current-password"
+              autofocus
+              required
+            />
+          </label>
+          <button class="primary-button" id="loginButton" type="submit">登 录</button>
+          <p class="field-hint">会话有效期 7 天，期间无需重复登录。</p>
+        </form>
+      </div>
+    </main>
+
+    <script>
+      // 主题与前台共用同一个 localStorage 键，登录页不引 script.js（用不到那些逻辑）
+      (function initTheme() {
+        var saved = localStorage.getItem("promptStudioTheme");
+        var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (saved ? saved === "dark" : prefersDark) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+
+      (function initLogin() {
+        var form = document.querySelector("#loginForm");
+        var input = document.querySelector("#passwordInput");
+        var button = document.querySelector("#loginButton");
+        var message = document.querySelector("#authMessage");
+
+        // returnTo 只认 /admin，其它一概忽略，防开放跳转
+        var returnTo = "/admin";
+
+        function showMessage(text, kind) {
+          message.textContent = text;
+          message.className = "auth-message" + (kind ? " is-" + kind : "");
+          message.hidden = false;
+        }
+
+        var params = new URLSearchParams(location.search);
+        if (params.get("expired") === "1") showMessage("登录已过期，请重新登录。", "info");
+        if (params.get("loggedOut") === "1") showMessage("已退出登录。", "info");
+
+        // 已经登录过就直接进后台，省一次输密码
+        fetch("/api/admin/session", { headers: { Accept: "application/json" } })
+          .then(function (res) {
+            if (res.ok) location.replace(returnTo);
+          })
+          .catch(function () {});
+
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+          var password = input.value;
+          if (!password) {
+            showMessage("请输入密码。", "error");
+            input.focus();
+            return;
+          }
+
+          button.disabled = true;
+          button.textContent = "登录中…";
+          fetch("/api/admin/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password: password }),
+          })
+            .then(function (res) {
+              var contentType = res.headers.get("Content-Type") || "";
+              if (!contentType.includes("application/json")) {
+                // 返回了 HTML：大概率是迁移期 Cloudflare Access 还拦着 /api/admin*
+                throw new Error(
+                  "登录请求被 Cloudflare Access 拦截（返回 " + res.status + "）。" +
+                    "请先用浏览器访问一次 /admin 通过 Access 验证，再回到本页登录；" +
+                    "或按 README 迁移步骤移除 Access 规则。"
+                );
+              }
+              return res.json().then(function (data) {
+                return { status: res.status, data: data };
+              });
+            })
+            .then(function (result) {
+              if (result.status === 200 && result.data && result.data.ok) {
+                button.textContent = "登录成功，正在跳转…";
+                location.replace(returnTo);
+                return;
+              }
+              button.disabled = false;
+              button.textContent = "登 录";
+              input.value = "";
+              input.focus();
+              showMessage((result.data && result.data.error) || "登录失败，请重试。", "error");
+            })
+            .catch(function (error) {
+              button.disabled = false;
+              button.textContent = "登 录";
+              showMessage(error.message || "无法连接服务器，请稍后重试。", "error");
+            });
+        });
+      })();
+    </script>
+  </body>
+</html>

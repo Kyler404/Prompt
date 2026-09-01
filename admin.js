@@ -143,6 +143,7 @@ const saveAllButton = document.querySelector("#saveAllButton");
 const restoreDefaultsButton = document.querySelector("#restoreDefaultsButton");
 const saveStatus = document.querySelector("#saveStatus");
 const toastAdmin = document.querySelector("#toast");
+const logoutButton = document.querySelector("#logoutButton");
 
 // —— 例图灯箱预览：结构与样式复用前台那一套（#imageLightbox + styles.css） ——
 // 用 IIFE 收纳，不往全局作用域加新名字：admin 页同时加载 script.js，
@@ -664,6 +665,10 @@ uploadInput?.addEventListener("change", async () => {
       fd.append("slug", slug);
       fd.append("exampleIndex", String(exampleIndex));
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      if (res.status === 401) {
+        handleAuthExpired();
+        return;
+      }
       if (!res.ok) {
         let message = `HTTP ${res.status}`;
         try {
@@ -737,6 +742,10 @@ async function saveAll() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(adminState.templates),
     });
+    if (res.status === 401) {
+      handleAuthExpired();
+      return;
+    }
     if (!res.ok) {
       let message = `HTTP ${res.status}`;
       try {
@@ -809,6 +818,28 @@ uploadExampleButton?.addEventListener("click", uploadExample);
 addVariableButton?.addEventListener("click", addVariable);
 saveAllButton?.addEventListener("click", saveAll);
 restoreDefaultsButton?.addEventListener("click", restoreDefaults);
+
+// 会话过期：跳去登录页重新登录。有未保存的修改先确认一声，避免静默丢失
+function handleAuthExpired() {
+  if (adminState.dirty) {
+    const confirmed = window.confirm("登录已过期，未保存的修改无法再保存。去重新登录吗？");
+    if (!confirmed) return;
+  }
+  location.href = "/login?expired=1&returnTo=%2Fadmin";
+}
+
+logoutButton?.addEventListener("click", async () => {
+  if (adminState.dirty) {
+    const confirmed = window.confirm("有未保存的修改，退出后将丢失，确定退出登录吗？");
+    if (!confirmed) return;
+  }
+  try {
+    await fetch("/api/admin/logout", { method: "POST" });
+  } catch {
+  }
+  adminState.dirty = false; // 主动退出不触发 beforeunload 拦截
+  location.href = "/login?loggedOut=1";
+});
 
 window.addEventListener("beforeunload", (event) => {
   if (!adminState.dirty) return;
